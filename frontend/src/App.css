@@ -1,0 +1,43 @@
+.app-shell {
+  width: min(100% - 48px, 1120px);
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #8b3f33;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1 {
+  max-width: 720px;
+  margin: 0;
+  color: #1f2521;
+  font-size: 5rem;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.supporting-text {
+  max-width: 560px;
+  margin: 24px 0 0;
+  color: #58605a;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    width: min(100% - 32px, 1120px);
+  }
+
+  h1 {
+    font-size: 2.5rem;
+  }
+}
