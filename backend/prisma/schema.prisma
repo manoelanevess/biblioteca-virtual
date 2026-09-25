@@ -38,55 +38,64 @@ enum StatusLeitura {
   CONCLUIDO
 }
 
+enum ModoBusca {
+  TRADICIONAL
+  INTELIGENTE
+}
+
 model Usuario {
-  id            String                @id @default(uuid()) @db.Uuid
+  id            String               @id @default(uuid()) @db.Uuid
   nome          String
-  email         String                @unique
+  email         String               @unique
   senhaHash     String
-  perfil        PerfilUsuario         @default(CLIENTE)
+  perfil        PerfilUsuario        @default(CLIENTE)
   ofertas       OfertaLivro[]
-  pedidos       Pedido[]
+  pedidosCompra Pedido[]             @relation("PedidosCliente")
+  pedidosVenda  Pedido[]             @relation("PedidosVendedor")
   biblioteca    ItemBiblioteca[]
   avaliacoes    Avaliacao[]
+  favoritos     Favorito[]
   visualizacoes VisualizacaoOferta[]
-  criadoEm      DateTime              @default(now())
-  atualizadoEm  DateTime              @updatedAt
+  consultas     ConsultaBusca[]
+  criadoEm      DateTime             @default(now())
+  atualizadoEm  DateTime             @updatedAt
 
   @@index([perfil])
 }
 
 model Autor {
-  id            String       @id @default(uuid()) @db.Uuid
-  nome          String
-  biografia     String?      @db.Text
-  livros        LivroAutor[]
-  criadoEm      DateTime     @default(now())
-  atualizadoEm  DateTime     @updatedAt
+  id           String       @id @default(uuid()) @db.Uuid
+  nome         String
+  biografia    String?      @db.Text
+  livros       LivroAutor[]
+  criadoEm     DateTime     @default(now())
+  atualizadoEm DateTime     @updatedAt
 
   @@index([nome])
 }
 
 model Categoria {
-  id            String           @id @default(uuid()) @db.Uuid
-  nome          String           @unique
-  descricao     String?          @db.Text
-  livros        LivroCategoria[]
-  criadoEm      DateTime         @default(now())
-  atualizadoEm  DateTime         @updatedAt
+  id           String           @id @default(uuid()) @db.Uuid
+  nome         String           @unique
+  descricao    String?          @db.Text
+  livros       LivroCategoria[]
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
 }
 
 model Livro {
-  id            String           @id @default(uuid()) @db.Uuid
-  titulo        String
-  sinopse       String?          @db.Text
-  urlCapa       String?
-  idioma        String           @default("pt-BR")
-  autores       LivroAutor[]
-  categorias    LivroCategoria[]
-  edicoes       EdicaoLivro[]
-  avaliacoes    Avaliacao[]
-  criadoEm      DateTime         @default(now())
-  atualizadoEm  DateTime         @updatedAt
+  id           String           @id @default(uuid()) @db.Uuid
+  titulo       String
+  sinopse      String?          @db.Text
+  urlCapa      String?
+  idioma       String           @default("pt-BR")
+  autores      LivroAutor[]
+  categorias   LivroCategoria[]
+  edicoes      EdicaoLivro[]
+  avaliacoes   Avaliacao[]
+  favoritos    Favorito[]
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
 
   @@index([titulo])
 }
@@ -112,37 +121,37 @@ model LivroCategoria {
 }
 
 model EdicaoLivro {
-  id              String        @id @default(uuid()) @db.Uuid
-  livroId         String        @db.Uuid
-  isbn            String?       @unique
+  id              String           @id @default(uuid()) @db.Uuid
+  livroId         String           @db.Uuid
+  isbn            String?          @unique
   formato         FormatoLivro
   editora         String?
   anoPublicacao   Int?
   numeroPaginas   Int?
-  livro           Livro         @relation(fields: [livroId], references: [id], onDelete: Cascade)
+  livro           Livro            @relation(fields: [livroId], references: [id], onDelete: Cascade)
   ofertas         OfertaLivro[]
   itensBiblioteca ItemBiblioteca[]
-  criadoEm        DateTime      @default(now())
-  atualizadoEm    DateTime      @updatedAt
+  criadoEm        DateTime         @default(now())
+  atualizadoEm    DateTime         @updatedAt
 
   @@index([livroId])
   @@index([formato])
 }
 
 model OfertaLivro {
-  id                  String       @id @default(uuid()) @db.Uuid
-  vendedorId          String       @db.Uuid
-  edicaoId            String       @db.Uuid
-  preco               Decimal      @db.Decimal(10, 2)
+  id                  String               @id @default(uuid()) @db.Uuid
+  vendedorId          String               @db.Uuid
+  edicaoId            String               @db.Uuid
+  preco               Decimal              @db.Decimal(10, 2)
   estoque             Int?
   chaveArquivoDigital String?
-  status              StatusOferta @default(RASCUNHO)
-  vendedor            Usuario      @relation(fields: [vendedorId], references: [id], onDelete: Restrict)
-  edicao              EdicaoLivro  @relation(fields: [edicaoId], references: [id], onDelete: Restrict)
+  status              StatusOferta         @default(RASCUNHO)
+  vendedor            Usuario              @relation(fields: [vendedorId], references: [id], onDelete: Restrict)
+  edicao              EdicaoLivro          @relation(fields: [edicaoId], references: [id], onDelete: Restrict)
   itensPedido         ItemPedido[]
   visualizacoes       VisualizacaoOferta[]
-  criadoEm            DateTime     @default(now())
-  atualizadoEm        DateTime     @updatedAt
+  criadoEm            DateTime             @default(now())
+  atualizadoEm        DateTime             @updatedAt
 
   @@unique([vendedorId, edicaoId])
   @@index([edicaoId])
@@ -152,26 +161,30 @@ model OfertaLivro {
 model Pedido {
   id              String           @id @default(uuid()) @db.Uuid
   clienteId       String           @db.Uuid
+  vendedorId      String           @db.Uuid
   status          StatusPedido     @default(PENDENTE)
   valorTotal      Decimal          @db.Decimal(10, 2)
-  cliente         Usuario          @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  cliente         Usuario          @relation("PedidosCliente", fields: [clienteId], references: [id], onDelete: Restrict)
+  vendedor        Usuario          @relation("PedidosVendedor", fields: [vendedorId], references: [id], onDelete: Restrict)
   itens           ItemPedido[]
   enderecoEntrega EnderecoEntrega?
   criadoEm        DateTime         @default(now())
   atualizadoEm    DateTime         @updatedAt
 
   @@index([clienteId, criadoEm])
+  @@index([vendedorId, criadoEm])
   @@index([status])
 }
 
 model ItemPedido {
-  id            String      @id @default(uuid()) @db.Uuid
-  pedidoId      String      @db.Uuid
-  ofertaId      String      @db.Uuid
-  quantidade    Int         @default(1)
-  precoUnitario Decimal     @db.Decimal(10, 2)
-  pedido        Pedido      @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  oferta        OfertaLivro @relation(fields: [ofertaId], references: [id], onDelete: Restrict)
+  id             String          @id @default(uuid()) @db.Uuid
+  pedidoId       String          @db.Uuid
+  ofertaId       String          @db.Uuid
+  quantidade     Int             @default(1)
+  precoUnitario  Decimal         @db.Decimal(10, 2)
+  pedido         Pedido          @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  oferta         OfertaLivro     @relation(fields: [ofertaId], references: [id], onDelete: Restrict)
+  itemBiblioteca ItemBiblioteca?
 
   @@unique([pedidoId, ofertaId])
   @@index([ofertaId])
@@ -195,12 +208,14 @@ model ItemBiblioteca {
   id              String        @id @default(uuid()) @db.Uuid
   usuarioId       String        @db.Uuid
   edicaoId        String        @db.Uuid
+  itemPedidoId    String?       @unique @db.Uuid
   statusLeitura   StatusLeitura @default(NAO_INICIADO)
   percentualLido  Int           @default(0)
   paginaAtual     Int?
   ultimaLeituraEm DateTime?
   usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   edicao          EdicaoLivro   @relation(fields: [edicaoId], references: [id], onDelete: Restrict)
+  itemPedido      ItemPedido?   @relation(fields: [itemPedidoId], references: [id], onDelete: SetNull)
   adicionadoEm    DateTime      @default(now())
   atualizadoEm    DateTime      @updatedAt
 
@@ -210,17 +225,28 @@ model ItemBiblioteca {
 }
 
 model Avaliacao {
-  id            String   @id @default(uuid()) @db.Uuid
-  usuarioId     String   @db.Uuid
-  livroId       String   @db.Uuid
-  nota          Int
-  comentario    String?  @db.Text
-  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  livro         Livro    @relation(fields: [livroId], references: [id], onDelete: Cascade)
-  criadoEm      DateTime @default(now())
-  atualizadoEm  DateTime @updatedAt
+  id           String   @id @default(uuid()) @db.Uuid
+  usuarioId    String   @db.Uuid
+  livroId      String   @db.Uuid
+  nota         Int
+  comentario   String?  @db.Text
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  livro        Livro    @relation(fields: [livroId], references: [id], onDelete: Cascade)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
 
   @@unique([usuarioId, livroId])
+  @@index([livroId])
+}
+
+model Favorito {
+  usuarioId String   @db.Uuid
+  livroId   String   @db.Uuid
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  livro     Livro    @relation(fields: [livroId], references: [id], onDelete: Cascade)
+  criadoEm  DateTime @default(now())
+
+  @@id([usuarioId, livroId])
   @@index([livroId])
 }
 
@@ -235,4 +261,18 @@ model VisualizacaoOferta {
 
   @@index([ofertaId, criadoEm])
   @@index([usuarioId])
+}
+
+model ConsultaBusca {
+  id                   String    @id @default(uuid()) @db.Uuid
+  usuarioId            String?   @db.Uuid
+  termoOriginal        String
+  modo                 ModoBusca @default(TRADICIONAL)
+  filtrosInterpretados Json?
+  quantidadeResultados Int       @default(0)
+  usuario              Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  criadoEm             DateTime  @default(now())
+
+  @@index([usuarioId])
+  @@index([modo, criadoEm])
 }
