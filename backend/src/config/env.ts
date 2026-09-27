@@ -8,7 +8,10 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(7200),
-  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_API_KEY: z.preprocess(
+    (valor) => (valor === '' ? undefined : valor),
+    z.string().min(1).optional(),
+  ),
 })
 
 export const env = envSchema.parse(process.env)
