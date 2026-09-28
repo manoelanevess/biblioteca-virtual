@@ -63,3 +63,19 @@ export const criarOfertaSchema = z.discriminatedUnion('formato', [
   ofertaEbookSchema,
 ])
 
+export const listarLivrosSchema = z
+  .object({
+    termo: z.string().trim().min(2).max(200).optional(),
+    formato: z.enum(['FISICO', 'EBOOK']).optional(),
+    categoriaId: idSchema.optional(),
+    pagina: z.coerce.number().int().min(1).default(1),
+    limite: z.coerce.number().int().min(1).max(50).default(12),
+  })
+  .strict()
+
+export const livroIdParametroSchema = z
+  .object({
+    livroId: idSchema,
+  })
+  .strict()
+
