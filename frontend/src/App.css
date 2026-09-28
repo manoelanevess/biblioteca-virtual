@@ -295,6 +295,17 @@
   font-size: 0.75rem;
 }
 
+.auth-alert {
+  margin: -4px 0 0;
+  padding: 12px 14px;
+  color: #7b3025;
+  background: #fceae5;
+  border-left: 3px solid #c65f45;
+  border-radius: 4px;
+  font-size: 0.825rem;
+  line-height: 1.45;
+}
+
 .submit-button {
   min-height: 50px;
   display: flex;
@@ -324,6 +335,18 @@
   transform: translateY(1px);
 }
 
+.submit-button:disabled,
+.auth-switch button:disabled,
+.password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.button-loader,
+.session-loader {
+  animation: spin 850ms linear infinite;
+}
+
 .auth-switch {
   margin: 28px 0 0;
   color: #6d7a74;
@@ -344,6 +367,164 @@
 
 .auth-switch button:hover {
   text-decoration: underline;
+}
+
+.session-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  color: #173e35;
+  background: #f3f5f3;
+}
+
+.workspace-page {
+  min-height: 100vh;
+  background: #f3f5f3;
+}
+
+.workspace-header {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 12px clamp(24px, 5vw, 72px);
+  background: #ffffff;
+  border-bottom: 1px solid #dbe2de;
+}
+
+.workspace-header .brand-lockup {
+  color: #173e35;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #173e35;
+  background: #f0c661;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 850;
+}
+
+.user-summary {
+  max-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-summary strong,
+.user-summary small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-summary strong {
+  color: #24332d;
+  font-size: 0.825rem;
+}
+
+.user-summary small {
+  color: #738079;
+  font-size: 0.7rem;
+}
+
+.logout-button {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #63716a;
+  background: transparent;
+  border: 1px solid #d5ddd9;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  color: #8f3c2c;
+  background: #fceae5;
+  border-color: #ecc7bd;
+}
+
+.workspace-content {
+  width: min(100% - 48px, 1120px);
+  margin: 0 auto;
+  padding: 72px 0;
+}
+
+.workspace-heading h1 {
+  margin: 0;
+  color: #1b2924;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2.75rem;
+  font-weight: 600;
+  line-height: 1.08;
+}
+
+.workspace-heading > p:last-child {
+  margin: 12px 0 0;
+  color: #68766f;
+  line-height: 1.6;
+}
+
+.empty-library {
+  min-height: 280px;
+  margin-top: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 38px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #dbe2de;
+  border-radius: 8px;
+}
+
+.empty-library-icon {
+  width: 58px;
+  height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #245b4d;
+  background: #e3eee9;
+  border-radius: 7px;
+}
+
+.empty-library h2 {
+  margin: 20px 0 0;
+  color: #24332d;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.5rem;
+}
+
+.empty-library p {
+  margin: 9px 0 0;
+  color: #718078;
+  font-size: 0.9rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 button:focus-visible,
@@ -408,6 +589,31 @@ input:focus-visible {
   .auth-heading h2 {
     font-size: 2rem;
   }
+
+  .workspace-header {
+    min-height: 66px;
+    padding-inline: 18px;
+  }
+
+  .workspace-header .brand-lockup > span:last-child,
+  .user-summary {
+    display: none;
+  }
+
+  .workspace-content {
+    width: min(100% - 32px, 1120px);
+    padding: 52px 0;
+  }
+
+  .workspace-heading h1 {
+    font-size: 2.2rem;
+  }
+
+  .empty-library {
+    min-height: 240px;
+    margin-top: 36px;
+    padding: 28px 20px;
+  }
 }
 
 @media (max-width: 380px) {
@@ -430,5 +636,10 @@ input:focus-visible {
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .button-loader,
+  .session-loader {
+    animation: none;
   }
 }
