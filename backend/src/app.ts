@@ -8,6 +8,7 @@ import { openApiDocument } from './docs/openapi.js'
 import { rotaNaoEncontrada, tratarErros } from './middleware/erros.js'
 import { autenticacaoRouter } from './routes/autenticacao.js'
 import { catalogoRouter } from './routes/catalogo.js'
+import { gerenciamentoCatalogoRouter } from './routes/gerenciamento-catalogo.js'
 import { healthRouter } from './routes/health.js'
 
 export const app = express()
@@ -25,6 +26,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument))
 app.use('/api/health', healthRouter)
 app.use('/api/autenticacao', autenticacaoRouter)
 app.use('/api/catalogo', catalogoRouter)
+app.use('/api/gerenciamento/catalogo', gerenciamentoCatalogoRouter)
 
 app.use(rotaNaoEncontrada)
 app.use(tratarErros)
