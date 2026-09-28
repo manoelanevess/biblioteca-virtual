@@ -21,6 +21,7 @@ import {
   saveSession,
   type Session,
 } from './api/autenticacao'
+import { CatalogManager } from './CatalogManager'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
@@ -334,6 +335,7 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
     .map((part) => part[0])
     .join('')
     .toUpperCase()
+  const canManageCatalog = session.user.role !== 'CLIENTE'
 
   return (
     <main className="workspace-page">
@@ -359,21 +361,25 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
         </div>
       </header>
 
-      <section className="workspace-content">
-        <header className="workspace-heading">
-          <p className="section-label">Minha biblioteca</p>
-          <h1>Olá, {firstName}.</h1>
-          <p>Seus livros e seu progresso ficarão reunidos aqui.</p>
-        </header>
+      {canManageCatalog ? (
+        <CatalogManager token={session.token} />
+      ) : (
+        <section className="workspace-content">
+          <header className="workspace-heading">
+            <p className="section-label">Minha biblioteca</p>
+            <h1>Olá, {firstName}.</h1>
+            <p>Seus livros e seu progresso ficarão reunidos aqui.</p>
+          </header>
 
-        <div className="empty-library">
-          <span className="empty-library-icon" aria-hidden="true">
-            <BookMarked size={28} />
-          </span>
-          <h2>Sua estante está vazia</h2>
-          <p>Os livros adquiridos aparecerão nesta área.</p>
-        </div>
-      </section>
+          <div className="empty-library">
+            <span className="empty-library-icon" aria-hidden="true">
+              <BookMarked size={28} />
+            </span>
+            <h2>Sua estante está vazia</h2>
+            <p>Os livros adquiridos aparecerão nesta área.</p>
+          </div>
+        </section>
+      )}
     </main>
   )
 }
