@@ -79,3 +79,5 @@ export const livroIdParametroSchema = z
   })
   .strict()
 
+export type ListarLivrosEntrada = z.infer<typeof listarLivrosSchema>
+
