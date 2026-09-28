@@ -19,6 +19,20 @@ const idsUnicosSchema = z
     message: 'Nao repita identificadores',
   })
 
+export const criarAutorSchema = z
+  .object({
+    nome: textoObrigatorioSchema.min(2).max(160),
+    biografia: z.string().trim().max(5000).optional(),
+  })
+  .strict()
+
+export const criarCategoriaSchema = z
+  .object({
+    nome: textoObrigatorioSchema.min(2).max(100),
+    descricao: z.string().trim().max(2000).optional(),
+  })
+  .strict()
+
 export const criarLivroSchema = z
   .object({
     titulo: textoObrigatorioSchema.max(200),
@@ -62,4 +76,42 @@ export const criarOfertaSchema = z.discriminatedUnion('formato', [
   ofertaFisicaSchema,
   ofertaEbookSchema,
 ])
+
+export const ofertaIdParametroSchema = z
+  .object({
+    ofertaId: idSchema,
+  })
+  .strict()
+
+export const alterarStatusOfertaSchema = z
+  .object({
+    status: z.enum(['RASCUNHO', 'ATIVA', 'INATIVA']),
+  })
+  .strict()
+
+export const listarLivrosSchema = z
+  .object({
+    termo: z.string().trim().min(2).max(200).optional(),
+    formato: z.enum(['FISICO', 'EBOOK']).optional(),
+    categoriaId: idSchema.optional(),
+    pagina: z.coerce.number().int().min(1).default(1),
+    limite: z.coerce.number().int().min(1).max(50).default(12),
+  })
+  .strict()
+
+export const livroIdParametroSchema = z
+  .object({
+    livroId: idSchema,
+  })
+  .strict()
+
+export type ListarLivrosEntrada = z.infer<typeof listarLivrosSchema>
+export type CriarAutorEntrada = z.infer<typeof criarAutorSchema>
+export type CriarCategoriaEntrada = z.infer<typeof criarCategoriaSchema>
+export type CriarLivroEntrada = z.infer<typeof criarLivroSchema>
+export type CriarEdicaoEntrada = z.infer<typeof criarEdicaoSchema>
+export type CriarOfertaEntrada = z.infer<typeof criarOfertaSchema>
+export type AlterarStatusOfertaEntrada = z.infer<
+  typeof alterarStatusOfertaSchema
+>
 
