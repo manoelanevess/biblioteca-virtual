@@ -88,3 +88,37 @@ export async function obterUsuarioAutenticado(usuarioId: string) {
 
   return usuario
 }
+
+export async function ativarPerfilVendedor(usuarioId: string) {
+  const usuarioAtual = await prisma.usuario.findUnique({
+    where: { id: usuarioId },
+    select: selecaoUsuarioPublico,
+  })
+
+  if (!usuarioAtual) {
+    throw new ErroHttp(401, 'USUARIO_INVALIDO', 'Usuario nao encontrado')
+  }
+
+  if (usuarioAtual.perfil === PerfilUsuario.ADMINISTRADOR) {
+    throw new ErroHttp(
+      409,
+      'PERFIL_NAO_ALTERADO',
+      'Administradores ja possuem acesso ao catalogo',
+    )
+  }
+
+  const usuario =
+    usuarioAtual.perfil === PerfilUsuario.VENDEDOR
+      ? usuarioAtual
+      : await prisma.usuario.update({
+          where: { id: usuarioId },
+          data: { perfil: PerfilUsuario.VENDEDOR },
+          select: selecaoUsuarioPublico,
+        })
+  const token = await gerarTokenAutenticacao({
+    usuarioId: usuario.id,
+    perfil: usuario.perfil,
+  })
+
+  return { usuario, token }
+}
