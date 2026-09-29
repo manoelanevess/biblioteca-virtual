@@ -75,6 +75,10 @@
   color: #96a29d;
 }
 
+.public-search input:focus-visible {
+  outline: 0;
+}
+
 .public-search button {
   align-self: stretch;
   min-width: 90px;
@@ -138,6 +142,12 @@
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.category-filter:focus-visible {
+  outline: 0;
+  border-color: #397363;
+  box-shadow: 0 0 0 3px rgba(57, 115, 99, 0.12);
 }
 
 .clear-filters {
