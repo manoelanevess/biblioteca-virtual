@@ -804,12 +804,14 @@
 
   .book-detail-overlay {
     align-items: stretch;
+    justify-content: flex-start;
     padding: 0;
   }
 
   .book-detail {
     width: 100%;
-    max-height: 100vh;
+    height: 100%;
+    max-height: none;
     border: 0;
     border-radius: 0;
   }
