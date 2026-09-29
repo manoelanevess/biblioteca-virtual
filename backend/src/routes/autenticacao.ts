@@ -1,6 +1,7 @@
 import { Router } from 'express'
 
 import {
+  ativarPerfilVendedor,
   entrar,
   obterUsuarioAutenticado,
   registrarUsuario,
@@ -109,3 +110,31 @@ autenticacaoRouter.get('/me', exigirAutenticacao, async (request, response) => {
 
   response.status(200).json({ usuario })
 })
+
+/**
+ * @openapi
+ * /api/autenticacao/perfil-vendedor:
+ *   post:
+ *     tags: [Autenticacao]
+ *     summary: Ativa o perfil de vendedor na conta autenticada
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil ativado e novo token emitido
+ *       401:
+ *         description: Token ausente ou invalido
+ *       409:
+ *         description: O perfil atual nao pode ser alterado
+ */
+autenticacaoRouter.post(
+  '/perfil-vendedor',
+  exigirAutenticacao,
+  async (request, response) => {
+    const resultado = await ativarPerfilVendedor(
+      request.usuarioAutenticado!.usuarioId,
+    )
+
+    response.status(200).json(resultado)
+  },
+)

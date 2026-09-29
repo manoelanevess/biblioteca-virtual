@@ -9,11 +9,13 @@ import {
   LockKeyhole,
   LogOut,
   Mail,
+  Store,
   User,
 } from 'lucide-react'
 import {
   ApiError,
   clearSession,
+  enableSellerProfile,
   getCurrentUser,
   getStoredSession,
   login,
@@ -101,12 +103,23 @@ function App() {
     setError(null)
   }
 
+  function handleSessionChange(nextSession: Session) {
+    saveSession(nextSession)
+    setSession(nextSession)
+  }
+
   if (restoringSession) {
     return <SessionLoading />
   }
 
   if (session) {
-    return <AuthenticatedArea session={session} onLogout={handleLogout} />
+    return (
+      <AuthenticatedArea
+        session={session}
+        onLogout={handleLogout}
+        onSessionChange={handleSessionChange}
+      />
+    )
   }
 
   return (
@@ -324,9 +337,17 @@ function SessionLoading() {
 type AuthenticatedAreaProps = {
   session: Session
   onLogout: () => void
+  onSessionChange: (session: Session) => void
 }
 
-function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
+function AuthenticatedArea({
+  session,
+  onLogout,
+  onSessionChange,
+}: AuthenticatedAreaProps) {
+  const [sellerDialogOpen, setSellerDialogOpen] = useState(false)
+  const [activatingSeller, setActivatingSeller] = useState(false)
+  const [sellerError, setSellerError] = useState<string | null>(null)
   const firstName = session.user.name.trim().split(/\s+/)[0]
   const initials = session.user.name
     .trim()
@@ -336,6 +357,24 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
     .join('')
     .toUpperCase()
   const canManageCatalog = session.user.role !== 'CLIENTE'
+
+  async function handleSellerActivation() {
+    setActivatingSeller(true)
+    setSellerError(null)
+
+    try {
+      const nextSession = await enableSellerProfile(session.token)
+      onSessionChange(nextSession)
+    } catch (activationError) {
+      setSellerError(
+        activationError instanceof ApiError
+          ? activationError.message
+          : 'Não foi possível ativar o perfil de vendedor.',
+      )
+    } finally {
+      setActivatingSeller(false)
+    }
+  }
 
   return (
     <main className="workspace-page">
@@ -378,6 +417,79 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
             <h2>Sua estante está vazia</h2>
             <p>Os livros adquiridos aparecerão nesta área.</p>
           </div>
+
+          <section className="seller-invitation">
+            <span className="seller-invitation-icon" aria-hidden="true">
+              <Store size={23} />
+            </span>
+            <div>
+              <h2>Quer vender seus livros?</h2>
+              <p>Ative as ferramentas de catálogo e acompanhe suas ofertas.</p>
+            </div>
+            <button
+              className="seller-activation-button"
+              type="button"
+              onClick={() => {
+                setSellerError(null)
+                setSellerDialogOpen(true)
+              }}
+            >
+              Começar a vender
+            </button>
+          </section>
+
+          {sellerDialogOpen && (
+            <div className="seller-dialog-overlay" role="presentation">
+              <section
+                className="seller-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="seller-dialog-title"
+              >
+                <span className="seller-dialog-icon" aria-hidden="true">
+                  <Store size={24} />
+                </span>
+                <h2 id="seller-dialog-title">Ativar perfil de vendedor?</h2>
+                <p>
+                  Sua conta receberá acesso ao cadastro de livros, ofertas e
+                  indicadores de venda.
+                </p>
+
+                {sellerError && (
+                  <p className="seller-dialog-error" role="alert">
+                    {sellerError}
+                  </p>
+                )}
+
+                <footer>
+                  <button
+                    className="seller-dialog-cancel"
+                    type="button"
+                    onClick={() => setSellerDialogOpen(false)}
+                    disabled={activatingSeller}
+                  >
+                    Agora não
+                  </button>
+                  <button
+                    className="seller-activation-button"
+                    type="button"
+                    onClick={() => void handleSellerActivation()}
+                    disabled={activatingSeller}
+                  >
+                    {activatingSeller ? (
+                      <LoaderCircle
+                        className="button-loader"
+                        size={18}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      'Ativar perfil'
+                    )}
+                  </button>
+                </footer>
+              </section>
+            </div>
+          )}
         </section>
       )}
     </main>

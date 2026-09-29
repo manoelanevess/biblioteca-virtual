@@ -99,6 +99,20 @@ export async function getCurrentUser(token: string) {
   return mapUser(response.usuario)
 }
 
+export async function enableSellerProfile(token: string) {
+  const response = await request<AuthenticationResponse>(
+    '/api/autenticacao/perfil-vendedor',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+
+  return mapSession(response)
+}
+
 export function getStoredSession(): Session | null {
   try {
     const storedValue = sessionStorage.getItem(sessionStorageKey)
