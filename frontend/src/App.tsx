@@ -3,8 +3,10 @@ import {
   ArrowRight,
   BookMarked,
   BookOpen,
+  Compass,
   Eye,
   EyeOff,
+  LibraryBig,
   LoaderCircle,
   LockKeyhole,
   LogOut,
@@ -24,9 +26,11 @@ import {
   type Session,
 } from './api/autenticacao'
 import { CatalogManager } from './CatalogManager'
+import { CustomerCatalog } from './CustomerCatalog'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
+type WorkspaceView = 'CATALOGO' | 'BIBLIOTECA' | 'LOJA'
 
 function App() {
   const [mode, setMode] = useState<AuthMode>('login')
@@ -345,6 +349,9 @@ function AuthenticatedArea({
   onLogout,
   onSessionChange,
 }: AuthenticatedAreaProps) {
+  const [view, setView] = useState<WorkspaceView>(
+    session.user.role === 'CLIENTE' ? 'CATALOGO' : 'LOJA',
+  )
   const [sellerDialogOpen, setSellerDialogOpen] = useState(false)
   const [activatingSeller, setActivatingSeller] = useState(false)
   const [sellerError, setSellerError] = useState<string | null>(null)
@@ -365,6 +372,7 @@ function AuthenticatedArea({
     try {
       const nextSession = await enableSellerProfile(session.token)
       onSessionChange(nextSession)
+      setView('LOJA')
     } catch (activationError) {
       setSellerError(
         activationError instanceof ApiError
@@ -380,6 +388,37 @@ function AuthenticatedArea({
     <main className="workspace-page">
       <header className="workspace-header">
         <Brand />
+        <nav className="workspace-navigation" aria-label="Área principal">
+          <button
+            type="button"
+            className={view === 'CATALOGO' ? 'active' : undefined}
+            aria-current={view === 'CATALOGO' ? 'page' : undefined}
+            onClick={() => setView('CATALOGO')}
+          >
+            <Compass size={18} aria-hidden="true" />
+            <span>Explorar</span>
+          </button>
+          <button
+            type="button"
+            className={view === 'BIBLIOTECA' ? 'active' : undefined}
+            aria-current={view === 'BIBLIOTECA' ? 'page' : undefined}
+            onClick={() => setView('BIBLIOTECA')}
+          >
+            <LibraryBig size={18} aria-hidden="true" />
+            <span>Minha biblioteca</span>
+          </button>
+          {canManageCatalog && (
+            <button
+              type="button"
+              className={view === 'LOJA' ? 'active' : undefined}
+              aria-current={view === 'LOJA' ? 'page' : undefined}
+              onClick={() => setView('LOJA')}
+            >
+              <Store size={18} aria-hidden="true" />
+              <span>Minha loja</span>
+            </button>
+          )}
+        </nav>
         <div className="user-menu">
           <span className="user-avatar" aria-hidden="true">
             {initials}
@@ -400,9 +439,13 @@ function AuthenticatedArea({
         </div>
       </header>
 
-      {canManageCatalog ? (
+      {view === 'CATALOGO' && <CustomerCatalog />}
+
+      {view === 'LOJA' && canManageCatalog && (
         <CatalogManager token={session.token} />
-      ) : (
+      )}
+
+      {view === 'BIBLIOTECA' && (
         <section className="workspace-content">
           <header className="workspace-heading">
             <p className="section-label">Minha biblioteca</p>
@@ -418,77 +461,85 @@ function AuthenticatedArea({
             <p>Os livros adquiridos aparecerão nesta área.</p>
           </div>
 
-          <section className="seller-invitation">
-            <span className="seller-invitation-icon" aria-hidden="true">
-              <Store size={23} />
-            </span>
-            <div>
-              <h2>Quer vender seus livros?</h2>
-              <p>Ative as ferramentas de catálogo e acompanhe suas ofertas.</p>
-            </div>
-            <button
-              className="seller-activation-button"
-              type="button"
-              onClick={() => {
-                setSellerError(null)
-                setSellerDialogOpen(true)
-              }}
-            >
-              Começar a vender
-            </button>
-          </section>
-
-          {sellerDialogOpen && (
-            <div className="seller-dialog-overlay" role="presentation">
-              <section
-                className="seller-dialog"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="seller-dialog-title"
-              >
-                <span className="seller-dialog-icon" aria-hidden="true">
-                  <Store size={24} />
+          {!canManageCatalog && (
+            <>
+              <section className="seller-invitation">
+                <span className="seller-invitation-icon" aria-hidden="true">
+                  <Store size={23} />
                 </span>
-                <h2 id="seller-dialog-title">Ativar perfil de vendedor?</h2>
-                <p>
-                  Sua conta receberá acesso ao cadastro de livros, ofertas e
-                  indicadores de venda.
-                </p>
-
-                {sellerError && (
-                  <p className="seller-dialog-error" role="alert">
-                    {sellerError}
+                <div>
+                  <h2>Quer vender seus livros?</h2>
+                  <p>
+                    Ative as ferramentas de catálogo e acompanhe suas ofertas.
                   </p>
-                )}
-
-                <footer>
-                  <button
-                    className="seller-dialog-cancel"
-                    type="button"
-                    onClick={() => setSellerDialogOpen(false)}
-                    disabled={activatingSeller}
-                  >
-                    Agora não
-                  </button>
-                  <button
-                    className="seller-activation-button"
-                    type="button"
-                    onClick={() => void handleSellerActivation()}
-                    disabled={activatingSeller}
-                  >
-                    {activatingSeller ? (
-                      <LoaderCircle
-                        className="button-loader"
-                        size={18}
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      'Ativar perfil'
-                    )}
-                  </button>
-                </footer>
+                </div>
+                <button
+                  className="seller-activation-button"
+                  type="button"
+                  onClick={() => {
+                    setSellerError(null)
+                    setSellerDialogOpen(true)
+                  }}
+                >
+                  Começar a vender
+                </button>
               </section>
-            </div>
+
+              {sellerDialogOpen && (
+                <div className="seller-dialog-overlay" role="presentation">
+                  <section
+                    className="seller-dialog"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="seller-dialog-title"
+                  >
+                    <span className="seller-dialog-icon" aria-hidden="true">
+                      <Store size={24} />
+                    </span>
+                    <h2 id="seller-dialog-title">
+                      Ativar perfil de vendedor?
+                    </h2>
+                    <p>
+                      Sua conta receberá acesso ao cadastro de livros, ofertas
+                      e indicadores de venda.
+                    </p>
+
+                    {sellerError && (
+                      <p className="seller-dialog-error" role="alert">
+                        {sellerError}
+                      </p>
+                    )}
+
+                    <footer>
+                      <button
+                        className="seller-dialog-cancel"
+                        type="button"
+                        onClick={() => setSellerDialogOpen(false)}
+                        disabled={activatingSeller}
+                      >
+                        Agora não
+                      </button>
+                      <button
+                        className="seller-activation-button"
+                        type="button"
+                        onClick={() => void handleSellerActivation()}
+                        disabled={activatingSeller}
+                      >
+                        {activatingSeller ? (
+                          <LoaderCircle
+                            className="button-loader"
+                            size={18}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          'Ativar perfil'
+                        )}
+                      </button>
+                    </footer>
+                  </section>
+                </div>
+              )}
+            </>
           )}
         </section>
       )}

@@ -54,6 +54,59 @@ export type ManagedOffer = {
   atualizadoEm: string
 }
 
+export type PublicOffer = {
+  id: string
+  preco: number
+  estoque: number | null
+  vendedor: {
+    id: string
+    nome: string
+  }
+}
+
+export type PublicEdition = CatalogEdition & {
+  numeroPaginas: number | null
+  precoInicial: number
+  ofertas: PublicOffer[]
+}
+
+export type PublicBook = {
+  id: string
+  titulo: string
+  sinopse: string | null
+  urlCapa: string | null
+  idioma: string
+  autores: CatalogAuthor[]
+  categorias: CatalogCategory[]
+  avaliacao: {
+    media: number | null
+    quantidade: number
+  }
+  edicoes: PublicEdition[]
+}
+
+export type PublicCategory = CatalogCategory & {
+  descricao: string | null
+}
+
+export type CatalogPage = {
+  livros: PublicBook[]
+  paginacao: {
+    pagina: number
+    limite: number
+    total: number
+    totalPaginas: number
+  }
+}
+
+export type PublicCatalogFilters = {
+  termo?: string
+  formato?: BookFormat
+  categoriaId?: string
+  pagina?: number
+  limite?: number
+}
+
 export type NewBookInput = {
   titulo: string
   sinopse?: string
@@ -85,6 +138,35 @@ export type NewOfferInput =
       preco: number
       chaveArquivoDigital: string
     }
+
+export async function getPublicBooks(filters: PublicCatalogFilters = {}) {
+  const searchParams = new URLSearchParams()
+
+  if (filters.termo) searchParams.set('termo', filters.termo)
+  if (filters.formato) searchParams.set('formato', filters.formato)
+  if (filters.categoriaId) {
+    searchParams.set('categoriaId', filters.categoriaId)
+  }
+  if (filters.pagina) searchParams.set('pagina', String(filters.pagina))
+  if (filters.limite) searchParams.set('limite', String(filters.limite))
+
+  const query = searchParams.toString()
+  return publicCatalogRequest<CatalogPage>(`/livros${query ? `?${query}` : ''}`)
+}
+
+export async function getPublicBook(bookId: string) {
+  const response = await publicCatalogRequest<{ livro: PublicBook }>(
+    `/livros/${bookId}`,
+  )
+  return response.livro
+}
+
+export async function getPublicCategories() {
+  const response = await publicCatalogRequest<{
+    categorias: PublicCategory[]
+  }>('/categorias')
+  return response.categorias
+}
 
 export async function getCatalogReferences(token: string) {
   return catalogRequest<CatalogReferences>('/referencias', token)
@@ -209,6 +291,38 @@ async function catalogRequest<T>(
     } | null
     throw new ApiError(
       apiError?.erro?.mensagem ?? 'Não foi possível concluir a operação.',
+      apiError?.erro?.codigo ?? 'ERRO_DESCONHECIDO',
+      response.status,
+    )
+  }
+
+  return body as T
+}
+
+async function publicCatalogRequest<T>(path: string): Promise<T> {
+  let response: Response
+
+  try {
+    response = await fetch(`/api/catalogo${path}`)
+  } catch {
+    throw new ApiError(
+      'Não foi possível conectar ao servidor.',
+      'CONEXAO_INDISPONIVEL',
+      0,
+    )
+  }
+
+  const body = (await response.json().catch(() => null)) as
+    | T
+    | { erro?: { codigo?: string; mensagem?: string } }
+    | null
+
+  if (!response.ok) {
+    const apiError = body as {
+      erro?: { codigo?: string; mensagem?: string }
+    } | null
+    throw new ApiError(
+      apiError?.erro?.mensagem ?? 'Não foi possível carregar o catálogo.',
       apiError?.erro?.codigo ?? 'ERRO_DESCONHECIDO',
       response.status,
     )
