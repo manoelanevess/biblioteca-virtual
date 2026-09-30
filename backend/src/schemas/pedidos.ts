@@ -38,6 +38,8 @@ export const criarPedidoSchema = z
     },
   )
 
+export type CriarPedidoEntrada = z.infer<typeof criarPedidoSchema>
+
 export function ofertasPertencemAoVendedor(
   vendedorId: string,
   ofertas: readonly { vendedorId: string }[],

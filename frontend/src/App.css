@@ -714,11 +714,17 @@
   }
 }
 
-button:focus-visible,
-input:focus-visible,
-select:focus-visible {
+button:focus-visible {
   outline: 3px solid rgba(240, 198, 97, 0.7);
   outline-offset: 2px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: #4f796d;
+  outline: 2px solid rgba(62, 111, 96, 0.2);
+  outline-offset: 1px;
 }
 
 @media (max-width: 900px) {

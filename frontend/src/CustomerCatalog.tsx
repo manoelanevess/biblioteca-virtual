@@ -6,13 +6,17 @@ import {
   type MouseEvent,
 } from 'react'
 import {
+  ArrowLeft,
   BookOpen,
   BookText,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   LoaderCircle,
+  MapPin,
   PackageOpen,
   Search,
+  ShoppingBag,
   Star,
   TabletSmartphone,
   X,
@@ -26,7 +30,13 @@ import {
   type PublicBook,
   type PublicCategory,
   type PublicEdition,
+  type PublicOffer,
 } from './api/catalogo'
+import {
+  criarPedido,
+  type EnderecoEntregaEntrada,
+  type PedidoCriado,
+} from './api/pedidos'
 import './CustomerCatalog.css'
 
 type FormatFilter = 'TODOS' | BookFormat
@@ -38,7 +48,51 @@ const emptyPagination = {
   totalPaginas: 0,
 }
 
-export function CustomerCatalog() {
+const brazilianStates = [
+  'AC',
+  'AL',
+  'AP',
+  'AM',
+  'BA',
+  'CE',
+  'DF',
+  'ES',
+  'GO',
+  'MA',
+  'MT',
+  'MS',
+  'MG',
+  'PA',
+  'PB',
+  'PR',
+  'PE',
+  'PI',
+  'RJ',
+  'RN',
+  'RS',
+  'RO',
+  'RR',
+  'SC',
+  'SP',
+  'SE',
+  'TO',
+] as const
+
+type CustomerCatalogProps = {
+  token: string
+  currentUserId: string
+}
+
+type CheckoutSelection = {
+  book: PublicBook
+  edition: PublicEdition
+  offer: PublicOffer
+}
+
+export function CustomerCatalog({
+  token,
+  currentUserId,
+}: CustomerCatalogProps) {
   const [books, setBooks] = useState<PublicBook[]>([])
   const [categories, setCategories] = useState<PublicCategory[]>([])
   const [pagination, setPagination] = useState(emptyPagination)
@@ -55,6 +109,10 @@ export function CustomerCatalog() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [detailReloadVersion, setDetailReloadVersion] = useState(0)
+  const [checkout, setCheckout] = useState<CheckoutSelection | null>(null)
+  const [purchaseResult, setPurchaseResult] = useState<PedidoCriado | null>(
+    null,
+  )
 
   useEffect(() => {
     let active = true
@@ -168,6 +226,8 @@ export function CustomerCatalog() {
     setSelectedBook(null)
     setDetailError(null)
     setDetailLoading(true)
+    setCheckout(null)
+    setPurchaseResult(null)
     setSelectedBookId(bookId)
   }
 
@@ -175,6 +235,24 @@ export function CustomerCatalog() {
     setSelectedBookId(null)
     setSelectedBook(null)
     setDetailError(null)
+    setCheckout(null)
+    setPurchaseResult(null)
+  }
+
+  function startCheckout(
+    book: PublicBook,
+    edition: PublicEdition,
+    offer: PublicOffer,
+  ) {
+    setPurchaseResult(null)
+    setCheckout({ book, edition, offer })
+  }
+
+  function finishPurchase(pedido: PedidoCriado) {
+    setPurchaseResult(pedido)
+    setCheckout(null)
+    prepareCatalogLoad()
+    setReloadVersion((version) => version + 1)
   }
 
   function handleBackdropClick(event: MouseEvent<HTMLDivElement>) {
@@ -357,7 +435,13 @@ export function CustomerCatalog() {
             className="book-detail"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="book-detail-title"
+            aria-labelledby={
+              purchaseResult
+                ? 'purchase-success-title'
+                : checkout
+                  ? 'checkout-title'
+                  : 'book-detail-title'
+            }
           >
             <button
               className="detail-close"
@@ -369,7 +453,19 @@ export function CustomerCatalog() {
               <X size={20} aria-hidden="true" />
             </button>
 
-            {detailLoading ? (
+            {purchaseResult ? (
+              <PurchaseSuccess
+                pedido={purchaseResult}
+                onClose={closeDetail}
+              />
+            ) : checkout ? (
+              <PurchaseCheckout
+                token={token}
+                selection={checkout}
+                onBack={() => setCheckout(null)}
+                onComplete={finishPurchase}
+              />
+            ) : detailLoading ? (
               <div className="detail-loading" aria-label="Carregando detalhes">
                 <LoaderCircle size={26} aria-hidden="true" />
               </div>
@@ -388,7 +484,13 @@ export function CustomerCatalog() {
                 </button>
               </div>
             ) : selectedBook ? (
-              <BookDetail book={selectedBook} />
+              <BookDetail
+                book={selectedBook}
+                currentUserId={currentUserId}
+                onBuy={(edition, offer) =>
+                  startCheckout(selectedBook, edition, offer)
+                }
+              />
             ) : null}
           </section>
         </div>
@@ -434,7 +536,13 @@ function BookCard({ book, onOpen }: { book: PublicBook; onOpen: () => void }) {
   )
 }
 
-function BookDetail({ book }: { book: PublicBook }) {
+type BookDetailProps = {
+  book: PublicBook
+  currentUserId: string
+  onBuy: (edition: PublicEdition, offer: PublicOffer) => void
+}
+
+function BookDetail({ book, currentUserId, onBuy }: BookDetailProps) {
   return (
     <div className="book-detail-content">
       <div className="detail-summary">
@@ -456,14 +564,29 @@ function BookDetail({ book }: { book: PublicBook }) {
       <div className="edition-list">
         <h3>Edições e ofertas</h3>
         {book.edicoes.map((edition) => (
-          <EditionOffers key={edition.id} edition={edition} />
+          <EditionOffers
+            key={edition.id}
+            edition={edition}
+            currentUserId={currentUserId}
+            onBuy={(offer) => onBuy(edition, offer)}
+          />
         ))}
       </div>
     </div>
   )
 }
 
-function EditionOffers({ edition }: { edition: PublicEdition }) {
+type EditionOffersProps = {
+  edition: PublicEdition
+  currentUserId: string
+  onBuy: (offer: PublicOffer) => void
+}
+
+function EditionOffers({
+  edition,
+  currentUserId,
+  onBuy,
+}: EditionOffersProps) {
   const metadata = [
     edition.editora,
     edition.anoPublicacao ? String(edition.anoPublicacao) : null,
@@ -478,21 +601,320 @@ function EditionOffers({ edition }: { edition: PublicEdition }) {
         <span>{metadata.join(' · ') || 'Dados editoriais não informados'}</span>
       </header>
       <div className="offer-list">
-        {edition.ofertas.map((offer) => (
-          <div className="public-offer" key={offer.id}>
-            <span>
-              <strong>{offer.vendedor.nome}</strong>
-              <small>
-                {edition.formato === 'FISICO'
-                  ? `${offer.estoque} em estoque`
-                  : 'Acesso digital'}
-              </small>
-            </span>
-            <strong>{formatCurrency(offer.preco)}</strong>
-          </div>
-        ))}
+        {edition.ofertas.map((offer) => {
+          const isOwnOffer = offer.vendedor.id === currentUserId
+          const isUnavailable =
+            edition.formato === 'FISICO' && (offer.estoque ?? 0) <= 0
+
+          return (
+            <div className="public-offer" key={offer.id}>
+              <span>
+                <strong>{offer.vendedor.nome}</strong>
+                <small>
+                  {edition.formato === 'FISICO'
+                    ? `${offer.estoque} em estoque`
+                    : 'Acesso digital'}
+                </small>
+              </span>
+              <div className="public-offer-actions">
+                <strong>{formatCurrency(offer.preco)}</strong>
+                <button
+                  type="button"
+                  onClick={() => onBuy(offer)}
+                  disabled={isOwnOffer || isUnavailable}
+                  title={isOwnOffer ? 'Esta oferta pertence a você' : undefined}
+                >
+                  {isOwnOffer ? 'Sua oferta' : 'Comprar'}
+                </button>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </section>
+  )
+}
+
+type PurchaseCheckoutProps = {
+  token: string
+  selection: CheckoutSelection
+  onBack: () => void
+  onComplete: (pedido: PedidoCriado) => void
+}
+
+function PurchaseCheckout({
+  token,
+  selection,
+  onBack,
+  onComplete,
+}: PurchaseCheckoutProps) {
+  const { book, edition, offer } = selection
+  const isPhysical = edition.formato === 'FISICO'
+  const maximumQuantity = isPhysical ? (offer.estoque ?? 1) : 1
+  const [quantity, setQuantity] = useState(1)
+  const [submitting, setSubmitting] = useState(false)
+  const [purchaseError, setPurchaseError] = useState<string | null>(null)
+  const total = offer.preco * quantity
+
+  async function handlePurchase(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSubmitting(true)
+    setPurchaseError(null)
+
+    const formData = new FormData(event.currentTarget)
+    let enderecoEntrega: EnderecoEntregaEntrada | undefined
+
+    if (isPhysical) {
+      const complemento = String(formData.get('complemento') ?? '').trim()
+      enderecoEntrega = {
+        destinatario: String(formData.get('destinatario') ?? ''),
+        cep: String(formData.get('cep') ?? '').replace(/\D/g, ''),
+        logradouro: String(formData.get('logradouro') ?? ''),
+        numero: String(formData.get('numero') ?? ''),
+        ...(complemento ? { complemento } : {}),
+        bairro: String(formData.get('bairro') ?? ''),
+        cidade: String(formData.get('cidade') ?? ''),
+        estado: String(formData.get('estado') ?? ''),
+      }
+    }
+
+    try {
+      const pedido = await criarPedido(token, {
+        vendedorId: offer.vendedor.id,
+        itens: [{ ofertaId: offer.id, quantidade: quantity }],
+        enderecoEntrega,
+      })
+      onComplete(pedido)
+    } catch (error) {
+      setPurchaseError(
+        error instanceof ApiError
+          ? error.message
+          : 'Não foi possível concluir a compra.',
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="purchase-checkout">
+      <header className="checkout-heading">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={submitting}
+          aria-label="Voltar para os detalhes"
+          title="Voltar para os detalhes"
+        >
+          <ArrowLeft size={19} aria-hidden="true" />
+        </button>
+        <div>
+          <p className="section-label">Finalizar compra</p>
+          <h2 id="checkout-title">Revise seu pedido</h2>
+        </div>
+      </header>
+
+      <form className="checkout-form" onSubmit={handlePurchase}>
+        <section className="checkout-product" aria-label="Item do pedido">
+          <BookCover book={book} />
+          <div>
+            <FormatLabel format={edition.formato} />
+            <h3>{book.titulo}</h3>
+            <p>{formatAuthors(book)}</p>
+            <small>Vendido por {offer.vendedor.nome}</small>
+          </div>
+          <strong>{formatCurrency(offer.preco)}</strong>
+        </section>
+
+        {isPhysical ? (
+          <>
+            <div className="checkout-section-heading">
+              <span aria-hidden="true">
+                <MapPin size={18} />
+              </span>
+              <div>
+                <h3>Endereço de entrega</h3>
+                <p>Informe onde o livro físico deve ser entregue.</p>
+              </div>
+            </div>
+
+            <div className="checkout-fields">
+              <label className="checkout-field checkout-field-wide">
+                <span>Destinatário</span>
+                <input
+                  name="destinatario"
+                  type="text"
+                  autoComplete="name"
+                  maxLength={160}
+                  disabled={submitting}
+                  required
+                />
+              </label>
+              <label className="checkout-field">
+                <span>CEP</span>
+                <input
+                  name="cep"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  pattern="[0-9]{8}"
+                  maxLength={8}
+                  placeholder="00000000"
+                  disabled={submitting}
+                  required
+                />
+              </label>
+              <label className="checkout-field checkout-field-street">
+                <span>Logradouro</span>
+                <input
+                  name="logradouro"
+                  type="text"
+                  autoComplete="address-line1"
+                  maxLength={200}
+                  disabled={submitting}
+                  required
+                />
+              </label>
+              <label className="checkout-field">
+                <span>Número</span>
+                <input
+                  name="numero"
+                  type="text"
+                  autoComplete="address-line2"
+                  maxLength={20}
+                  disabled={submitting}
+                  required
+                />
+              </label>
+              <label className="checkout-field">
+                <span>Complemento</span>
+                <input
+                  name="complemento"
+                  type="text"
+                  maxLength={120}
+                  disabled={submitting}
+                />
+              </label>
+              <label className="checkout-field">
+                <span>Bairro</span>
+                <input
+                  name="bairro"
+                  type="text"
+                  maxLength={120}
+                  disabled={submitting}
+                  required
+                />
+              </label>
+              <label className="checkout-field checkout-field-city">
+                <span>Cidade</span>
+                <input
+                  name="cidade"
+                  type="text"
+                  autoComplete="address-level2"
+                  maxLength={120}
+                  disabled={submitting}
+                  required
+                />
+              </label>
+              <label className="checkout-field">
+                <span>Estado</span>
+                <select
+                  name="estado"
+                  autoComplete="address-level1"
+                  defaultValue=""
+                  disabled={submitting}
+                  required
+                >
+                  <option value="" disabled>
+                    UF
+                  </option>
+                  {brazilianStates.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </>
+        ) : (
+          <div className="digital-delivery">
+            <TabletSmartphone size={22} aria-hidden="true" />
+            <div>
+              <h3>Acesso digital</h3>
+              <p>O ebook será vinculado à sua biblioteca após a compra.</p>
+            </div>
+          </div>
+        )}
+
+        <footer className="checkout-footer">
+          {isPhysical && (
+            <label className="checkout-quantity">
+              <span>Quantidade</span>
+              <input
+                type="number"
+                min={1}
+                max={maximumQuantity}
+                value={quantity}
+                onChange={(event) =>
+                  setQuantity(
+                    Math.min(
+                      maximumQuantity,
+                      Math.max(1, Number(event.target.value) || 1),
+                    ),
+                  )
+                }
+                disabled={submitting}
+              />
+            </label>
+          )}
+          <div className="checkout-total">
+            <span>Total</span>
+            <strong>{formatCurrency(total)}</strong>
+          </div>
+          <button type="submit" disabled={submitting}>
+            {submitting ? (
+              <LoaderCircle className="button-loader" size={18} aria-hidden="true" />
+            ) : (
+              <ShoppingBag size={18} aria-hidden="true" />
+            )}
+            {submitting ? 'Finalizando' : 'Finalizar compra'}
+          </button>
+        </footer>
+
+        {purchaseError && (
+          <p className="checkout-error" role="alert">
+            {purchaseError}
+          </p>
+        )}
+      </form>
+    </div>
+  )
+}
+
+function PurchaseSuccess({
+  pedido,
+  onClose,
+}: {
+  pedido: PedidoCriado
+  onClose: () => void
+}) {
+  return (
+    <div className="purchase-success">
+      <span className="purchase-success-icon" aria-hidden="true">
+        <CheckCircle2 size={34} />
+      </span>
+      <p className="section-label">Pedido aprovado</p>
+      <h2 id="purchase-success-title">Compra concluída</h2>
+      <p>Seu pedido foi registrado com sucesso.</p>
+      <div className="purchase-receipt">
+        <span>Pedido #{pedido.id.slice(0, 8).toUpperCase()}</span>
+        <strong>{formatCurrency(pedido.valorTotal)}</strong>
+      </div>
+      <button type="button" onClick={onClose}>
+        Continuar explorando
+      </button>
+    </div>
   )
 }
 

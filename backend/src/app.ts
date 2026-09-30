@@ -10,6 +10,7 @@ import { autenticacaoRouter } from './routes/autenticacao.js'
 import { catalogoRouter } from './routes/catalogo.js'
 import { gerenciamentoCatalogoRouter } from './routes/gerenciamento-catalogo.js'
 import { healthRouter } from './routes/health.js'
+import { pedidosRouter } from './routes/pedidos.js'
 
 export const app = express()
 
@@ -27,6 +28,7 @@ app.use('/api/health', healthRouter)
 app.use('/api/autenticacao', autenticacaoRouter)
 app.use('/api/catalogo', catalogoRouter)
 app.use('/api/gerenciamento/catalogo', gerenciamentoCatalogoRouter)
+app.use('/api/pedidos', pedidosRouter)
 
 app.use(rotaNaoEncontrada)
 app.use(tratarErros)

@@ -439,7 +439,12 @@ function AuthenticatedArea({
         </div>
       </header>
 
-      {view === 'CATALOGO' && <CustomerCatalog />}
+      {view === 'CATALOGO' && (
+        <CustomerCatalog
+          token={session.token}
+          currentUserId={session.user.id}
+        />
+      )}
 
       {view === 'LOJA' && canManageCatalog && (
         <CatalogManager token={session.token} />
