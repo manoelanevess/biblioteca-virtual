@@ -227,15 +227,17 @@ model ItemBiblioteca {
 }
 
 model Avaliacao {
-  id           String   @id @default(uuid()) @db.Uuid
-  usuarioId    String   @db.Uuid
-  livroId      String   @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  usuarioId    String    @db.Uuid
+  livroId      String    @db.Uuid
   nota         Int
-  comentario   String?  @db.Text
-  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  livro        Livro    @relation(fields: [livroId], references: [id], onDelete: Cascade)
-  criadoEm     DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  comentario   String?   @db.Text
+  resposta     String?   @db.Text
+  respondidaEm DateTime?
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  livro        Livro     @relation(fields: [livroId], references: [id], onDelete: Cascade)
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
 
   @@unique([usuarioId, livroId])
   @@index([livroId])
