@@ -7,6 +7,7 @@ import { env } from './config/env.js'
 import { openApiDocument } from './docs/openapi.js'
 import { rotaNaoEncontrada, tratarErros } from './middleware/erros.js'
 import { autenticacaoRouter } from './routes/autenticacao.js'
+import { bibliotecaRouter } from './routes/biblioteca.js'
 import { catalogoRouter } from './routes/catalogo.js'
 import { gerenciamentoCatalogoRouter } from './routes/gerenciamento-catalogo.js'
 import { healthRouter } from './routes/health.js'
@@ -26,6 +27,7 @@ app.use(express.json())
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument))
 app.use('/api/health', healthRouter)
 app.use('/api/autenticacao', autenticacaoRouter)
+app.use('/api/biblioteca', bibliotecaRouter)
 app.use('/api/catalogo', catalogoRouter)
 app.use('/api/gerenciamento/catalogo', gerenciamentoCatalogoRouter)
 app.use('/api/pedidos', pedidosRouter)
