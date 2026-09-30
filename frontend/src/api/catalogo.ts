@@ -1,4 +1,5 @@
 import { ApiError } from './autenticacao'
+import { apiUrl } from './base'
 
 export type BookFormat = 'FISICO' | 'EBOOK'
 export type OfferStatus = 'RASCUNHO' | 'ATIVA' | 'INATIVA'
@@ -201,7 +202,7 @@ export async function registerOfferView(offerId: string) {
     localStorage.setItem(storageKey, sessionId)
   }
 
-  await fetch(`/api/catalogo/ofertas/${offerId}/visualizacoes`, {
+  await fetch(apiUrl(`/api/catalogo/ofertas/${offerId}/visualizacoes`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessaoId: sessionId }),
@@ -333,7 +334,7 @@ async function catalogRequest<T>(
   let response: Response
 
   try {
-    response = await fetch(`/api/gerenciamento/catalogo${path}`, {
+    response = await fetch(apiUrl(`/api/gerenciamento/catalogo${path}`), {
       ...init,
       headers: {
         'Content-Type': 'application/json',
@@ -372,7 +373,7 @@ async function publicCatalogRequest<T>(path: string): Promise<T> {
   let response: Response
 
   try {
-    response = await fetch(`/api/catalogo${path}`)
+    response = await fetch(apiUrl(`/api/catalogo${path}`))
   } catch {
     throw new ApiError(
       'Não foi possível conectar ao servidor.',

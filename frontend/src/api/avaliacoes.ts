@@ -1,4 +1,5 @@
 import { ApiError } from './autenticacao'
+import { apiUrl } from './base'
 
 export type BookReview = {
   id: string
@@ -86,7 +87,7 @@ async function reviewsRequest<T>(
   let response: Response
 
   try {
-    response = await fetch(`/api/avaliacoes${path}`, {
+    response = await fetch(apiUrl(`/api/avaliacoes${path}`), {
       ...init,
       headers: {
         'Content-Type': 'application/json',
