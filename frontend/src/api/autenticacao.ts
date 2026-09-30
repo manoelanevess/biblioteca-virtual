@@ -115,7 +115,7 @@ export async function enableSellerProfile(token: string) {
 
 export function getStoredSession(): Session | null {
   try {
-    const storedValue = sessionStorage.getItem(sessionStorageKey)
+    const storedValue = localStorage.getItem(sessionStorageKey)
 
     if (!storedValue) {
       return null
@@ -141,11 +141,11 @@ export function getStoredSession(): Session | null {
 }
 
 export function saveSession(session: Session) {
-  sessionStorage.setItem(sessionStorageKey, JSON.stringify(session))
+  localStorage.setItem(sessionStorageKey, JSON.stringify(session))
 }
 
 export function clearSession() {
-  sessionStorage.removeItem(sessionStorageKey)
+  localStorage.removeItem(sessionStorageKey)
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
