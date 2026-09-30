@@ -106,6 +106,7 @@ export type PublicCatalogFilters = {
   formato?: BookFormat
   categoriaId?: string
   destaque?: boolean
+  ordenacao?: 'TITULO' | 'MAIS_RECENTES' | 'MELHOR_AVALIADOS' | 'MENOR_AVALIADOS'
   pagina?: number
   limite?: number
 }
@@ -167,6 +168,7 @@ export async function getPublicBooks(filters: PublicCatalogFilters = {}) {
   if (filters.destaque !== undefined) {
     searchParams.set('destaque', String(filters.destaque))
   }
+  if (filters.ordenacao) searchParams.set('ordenacao', filters.ordenacao)
   if (filters.pagina) searchParams.set('pagina', String(filters.pagina))
   if (filters.limite) searchParams.set('limite', String(filters.limite))
 

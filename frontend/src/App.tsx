@@ -12,6 +12,7 @@ import {
   LockKeyhole,
   LogOut,
   Mail,
+  MessageSquareText,
   Store,
   User,
   UserPlus,
@@ -28,11 +29,17 @@ import {
 } from './api/autenticacao'
 import { CatalogManager } from './CatalogManager'
 import { CustomerCatalog } from './CustomerCatalog'
+import { MyReviews } from './MyReviews'
 import { PersonalLibrary } from './PersonalLibrary'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
-type WorkspaceView = 'CATALOGO' | 'BIBLIOTECA' | 'LOJA'
+type WorkspaceView =
+  | 'CATALOGO'
+  | 'BIBLIOTECA'
+  | 'MINHAS_AVALIACOES'
+  | 'LOJA'
+  | 'GERENCIAR_AVALIACOES'
 
 function App() {
   const [mode, setMode] = useState<AuthMode>('login')
@@ -428,15 +435,26 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
             <span>Explorar</span>
           </button>
           {canUsePersonalLibrary && (
-            <button
-              type="button"
-              className={view === 'BIBLIOTECA' ? 'active' : undefined}
-              aria-current={view === 'BIBLIOTECA' ? 'page' : undefined}
-              onClick={() => setView('BIBLIOTECA')}
-            >
-              <LibraryBig size={18} aria-hidden="true" />
-              <span>Minha biblioteca</span>
-            </button>
+            <>
+              <button
+                type="button"
+                className={view === 'BIBLIOTECA' ? 'active' : undefined}
+                aria-current={view === 'BIBLIOTECA' ? 'page' : undefined}
+                onClick={() => setView('BIBLIOTECA')}
+              >
+                <LibraryBig size={18} aria-hidden="true" />
+                <span>Minha biblioteca</span>
+              </button>
+              <button
+                type="button"
+                className={view === 'MINHAS_AVALIACOES' ? 'active' : undefined}
+                aria-current={view === 'MINHAS_AVALIACOES' ? 'page' : undefined}
+                onClick={() => setView('MINHAS_AVALIACOES')}
+              >
+                <MessageSquareText size={18} aria-hidden="true" />
+                <span>Minhas avaliações</span>
+              </button>
+            </>
           )}
           {canManageCatalog && (
             <button
@@ -474,6 +492,7 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
         <CustomerCatalog
           token={session.token}
           currentUserId={session.user.id}
+          canReview={session.user.role === 'CLIENTE'}
         />
       )}
 
@@ -485,6 +504,10 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
         <section className="workspace-content">
           <PersonalLibrary token={session.token} firstName={firstName} />
         </section>
+      )}
+
+      {view === 'MINHAS_AVALIACOES' && canUsePersonalLibrary && (
+        <MyReviews token={session.token} />
       )}
     </main>
   )

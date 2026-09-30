@@ -99,6 +99,9 @@ export const listarLivrosSchema = z
       .enum(['true', 'false'])
       .transform((valor) => valor === 'true')
       .optional(),
+    ordenacao: z
+      .enum(['TITULO', 'MAIS_RECENTES', 'MELHOR_AVALIADOS', 'MENOR_AVALIADOS'])
+      .default('TITULO'),
     pagina: z.coerce.number().int().min(1).default(1),
     limite: z.coerce.number().int().min(1).max(50).default(12),
   })

@@ -38,6 +38,11 @@ export const catalogoRouter = Router()
  *         schema:
  *           type: boolean
  *       - in: query
+ *         name: ordenacao
+ *         schema:
+ *           type: string
+ *           enum: [TITULO, MAIS_RECENTES, MELHOR_AVALIADOS, MENOR_AVALIADOS]
+ *       - in: query
  *         name: pagina
  *         schema:
  *           type: integer

@@ -18,6 +18,7 @@ describe('consulta do catalogo', () => {
     const resultado = listarLivrosSchema.parse({})
 
     assert.deepEqual(resultado, {
+      ordenacao: 'TITULO',
       pagina: 1,
       limite: 12,
     })
@@ -34,6 +35,7 @@ describe('consulta do catalogo', () => {
     assert.deepEqual(resultado, {
       termo: 'fantasia',
       formato: 'EBOOK',
+      ordenacao: 'TITULO',
       pagina: 2,
       limite: 24,
     })
@@ -49,6 +51,17 @@ describe('consulta do catalogo', () => {
     assert.equal(listarLivrosSchema.parse({ destaque: 'true' }).destaque, true)
     assert.equal(
       listarLivrosSchema.parse({ destaque: 'false' }).destaque,
+      false,
+    )
+  })
+
+  it('aceita as opcoes de ordenacao do catalogo', () => {
+    assert.equal(
+      listarLivrosSchema.parse({ ordenacao: 'MAIS_RECENTES' }).ordenacao,
+      'MAIS_RECENTES',
+    )
+    assert.equal(
+      listarLivrosSchema.safeParse({ ordenacao: 'MAIS_VENDIDOS' }).success,
       false,
     )
   })

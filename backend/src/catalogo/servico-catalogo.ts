@@ -32,6 +32,7 @@ function criarSelecaoLivro(formato?: FormatoLivro) {
     urlCapa: true,
     idioma: true,
     destaque: true,
+    criadoEm: true,
     autores: {
       select: {
         autor: {
@@ -84,6 +85,48 @@ function criarSelecaoLivro(formato?: FormatoLivro) {
 type LivroConsultado = Prisma.LivroGetPayload<{
   select: ReturnType<typeof criarSelecaoLivro>
 }>
+
+function calcularMediaAvaliacao(livro: LivroConsultado) {
+  if (!livro.avaliacoes.length) {
+    return null
+  }
+
+  return (
+    livro.avaliacoes.reduce(
+      (total, avaliacao) => total + avaliacao.nota,
+      0,
+    ) / livro.avaliacoes.length
+  )
+}
+
+function ordenarLivros(
+  livros: LivroConsultado[],
+  ordenacao: ListarLivrosEntrada['ordenacao'],
+) {
+  return livros.sort((livroA, livroB) => {
+    if (ordenacao === 'MAIS_RECENTES') {
+      return livroB.criadoEm.getTime() - livroA.criadoEm.getTime()
+    }
+
+    if (
+      ordenacao === 'MELHOR_AVALIADOS' ||
+      ordenacao === 'MENOR_AVALIADOS'
+    ) {
+      const mediaA = calcularMediaAvaliacao(livroA)
+      const mediaB = calcularMediaAvaliacao(livroB)
+
+      if (mediaA === null) return mediaB === null ? 0 : 1
+      if (mediaB === null) return -1
+      if (mediaA !== mediaB) {
+        return ordenacao === 'MELHOR_AVALIADOS'
+          ? mediaB - mediaA
+          : mediaA - mediaB
+      }
+    }
+
+    return livroA.titulo.localeCompare(livroB.titulo, 'pt-BR')
+  })
+}
 
 function mapearLivro(livro: LivroConsultado) {
   const somaNotas = livro.avaliacoes.reduce(
@@ -186,13 +229,14 @@ export async function listarLivros(entrada: ListarLivrosEntrada) {
   const livros = await prisma.livro.findMany({
     where,
     select: criarSelecaoLivro(entrada.formato),
-    orderBy: { titulo: 'asc' },
-    skip: pular,
-    take: entrada.limite,
   })
+  const livrosDaPagina = ordenarLivros(livros, entrada.ordenacao).slice(
+    pular,
+    pular + entrada.limite,
+  )
 
   return {
-    livros: livros.map(mapearLivro),
+    livros: livrosDaPagina.map(mapearLivro),
     paginacao: {
       pagina: entrada.pagina,
       limite: entrada.limite,
