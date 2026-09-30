@@ -17,10 +17,12 @@ import {
   Plus,
   Search,
   ShoppingBag,
+  Star,
   X,
 } from 'lucide-react'
 import { ApiError } from './api/autenticacao'
 import {
+  changeBookHighlight,
   changeOfferStatus,
   createAuthor,
   createBook,
@@ -55,6 +57,7 @@ export function CatalogManager({ token }: CatalogManagerProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('TODAS')
   const [editorOpen, setEditorOpen] = useState(false)
   const [changingOfferId, setChangingOfferId] = useState<string | null>(null)
+  const [changingBookId, setChangingBookId] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -121,6 +124,42 @@ export function CatalogManager({ token }: CatalogManagerProps) {
       setError(getErrorMessage(loadError))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleHighlightChange(offer: ManagedOffer) {
+    const book = offer.edicao.livro
+    const nextHighlight = !book.destaque
+    setChangingBookId(book.id)
+    setError(null)
+
+    try {
+      await changeBookHighlight(token, book.id, nextHighlight)
+      setOffers((currentOffers) =>
+        currentOffers.map((currentOffer) =>
+          currentOffer.edicao.livro.id === book.id
+            ? {
+                ...currentOffer,
+                edicao: {
+                  ...currentOffer.edicao,
+                  livro: {
+                    ...currentOffer.edicao.livro,
+                    destaque: nextHighlight,
+                  },
+                },
+              }
+            : currentOffer,
+        ),
+      )
+      setSuccess(
+        nextHighlight
+          ? 'Livro adicionado aos destaques.'
+          : 'Livro removido dos destaques.',
+      )
+    } catch (highlightError) {
+      setError(getErrorMessage(highlightError))
+    } finally {
+      setChangingBookId(null)
     }
   }
 
@@ -279,7 +318,13 @@ export function CatalogManager({ token }: CatalogManagerProps) {
                     key={offer.id}
                     offer={offer}
                     changing={changingOfferId === offer.id}
+                    changingHighlight={
+                      changingBookId === offer.edicao.livro.id
+                    }
                     onStatusChange={() => void handleStatusChange(offer)}
+                    onHighlightChange={() =>
+                      void handleHighlightChange(offer)
+                    }
                   />
                 ))}
               </tbody>
@@ -336,11 +381,15 @@ function Metric({
 function OfferRow({
   offer,
   changing,
+  changingHighlight,
   onStatusChange,
+  onHighlightChange,
 }: {
   offer: ManagedOffer
   changing: boolean
+  changingHighlight: boolean
   onStatusChange: () => void
+  onHighlightChange: () => void
 }) {
   const isActive = offer.status === 'ATIVA'
 
@@ -382,22 +431,54 @@ function OfferRow({
         </span>
       </td>
       <td className="row-action-cell">
-        <button
-          className="row-action"
-          type="button"
-          onClick={onStatusChange}
-          disabled={changing}
-          aria-label={isActive ? 'Desativar oferta' : 'Publicar oferta'}
-          title={isActive ? 'Desativar oferta' : 'Publicar oferta'}
-        >
-          {changing ? (
-            <LoaderCircle className="button-loader" size={18} />
-          ) : isActive ? (
-            <CirclePause size={18} />
-          ) : (
-            <CirclePlay size={18} />
-          )}
-        </button>
+        <div className="row-actions">
+          <button
+            className={`row-action highlight-action${
+              offer.edicao.livro.destaque ? ' active' : ''
+            }`}
+            type="button"
+            onClick={onHighlightChange}
+            disabled={changingHighlight}
+            aria-pressed={offer.edicao.livro.destaque}
+            aria-label={
+              offer.edicao.livro.destaque
+                ? 'Remover livro dos destaques'
+                : 'Adicionar livro aos destaques'
+            }
+            title={
+              offer.edicao.livro.destaque
+                ? 'Remover dos destaques'
+                : 'Adicionar aos destaques'
+            }
+          >
+            {changingHighlight ? (
+              <LoaderCircle className="button-loader" size={18} />
+            ) : (
+              <Star
+                size={18}
+                fill={
+                  offer.edicao.livro.destaque ? 'currentColor' : 'none'
+                }
+              />
+            )}
+          </button>
+          <button
+            className="row-action"
+            type="button"
+            onClick={onStatusChange}
+            disabled={changing}
+            aria-label={isActive ? 'Desativar oferta' : 'Publicar oferta'}
+            title={isActive ? 'Desativar oferta' : 'Publicar oferta'}
+          >
+            {changing ? (
+              <LoaderCircle className="button-loader" size={18} />
+            ) : isActive ? (
+              <CirclePause size={18} />
+            ) : (
+              <CirclePlay size={18} />
+            )}
+          </button>
+        </div>
       </td>
     </tr>
   )
@@ -448,6 +529,7 @@ function RegistrationPanel({
           sinopse: getOptionalValue(formData, 'synopsis'),
           urlCapa: getOptionalValue(formData, 'coverUrl'),
           idioma: getRequiredValue(formData, 'language'),
+          destaque: formData.get('highlight') === 'on',
           autorIds: [getRequiredValue(formData, 'authorId')],
           categoriaIds: [getRequiredValue(formData, 'categoryId')],
         })
@@ -638,6 +720,13 @@ function RegistrationPanel({
                   <input name="coverUrl" type="url" placeholder="https://" />
                 </Field>
               </div>
+              <label className="highlight-option">
+                <input name="highlight" type="checkbox" />
+                <span>
+                  <Star size={17} aria-hidden="true" />
+                  Exibir como destaque
+                </span>
+              </label>
             </>
           )}
 

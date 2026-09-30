@@ -44,6 +44,7 @@ export type ManagedOffer = {
       id: string
       titulo: string
       urlCapa: string | null
+      destaque: boolean
     }
   }
   metricas: {
@@ -76,6 +77,7 @@ export type PublicBook = {
   sinopse: string | null
   urlCapa: string | null
   idioma: string
+  destaque: boolean
   autores: CatalogAuthor[]
   categorias: CatalogCategory[]
   avaliacao: {
@@ -103,6 +105,7 @@ export type PublicCatalogFilters = {
   termo?: string
   formato?: BookFormat
   categoriaId?: string
+  destaque?: boolean
   pagina?: number
   limite?: number
 }
@@ -112,6 +115,7 @@ export type NewBookInput = {
   sinopse?: string
   urlCapa?: string
   idioma: string
+  destaque?: boolean
   autorIds: string[]
   categoriaIds: string[]
 }
@@ -146,6 +150,9 @@ export async function getPublicBooks(filters: PublicCatalogFilters = {}) {
   if (filters.formato) searchParams.set('formato', filters.formato)
   if (filters.categoriaId) {
     searchParams.set('categoriaId', filters.categoriaId)
+  }
+  if (filters.destaque !== undefined) {
+    searchParams.set('destaque', String(filters.destaque))
   }
   if (filters.pagina) searchParams.set('pagina', String(filters.pagina))
   if (filters.limite) searchParams.set('limite', String(filters.limite))
@@ -254,6 +261,20 @@ export async function changeOfferStatus(
     },
   )
   return response.oferta
+}
+
+export async function changeBookHighlight(
+  token: string,
+  bookId: string,
+  destaque: boolean,
+) {
+  const response = await catalogRequest<{
+    livro: { id: string; titulo: string; destaque: boolean }
+  }>(`/livros/${bookId}/destaque`, token, {
+    method: 'PATCH',
+    body: JSON.stringify({ destaque }),
+  })
+  return response.livro
 }
 
 async function catalogRequest<T>(
