@@ -120,6 +120,19 @@ export type NewBookInput = {
   categoriaIds: string[]
 }
 
+export type BookSuggestion = {
+  autorSugerido: string
+  sinopse: string
+  categoriaSugerida: string
+  idioma: string
+}
+
+export type BookSuggestionInput = {
+  titulo: string
+  autor?: string
+  isbn?: string
+}
+
 export type NewEditionInput = {
   livroId: string
   isbn?: string
@@ -221,6 +234,21 @@ export async function createBook(token: string, input: NewBookInput) {
     },
   )
   return response.livro
+}
+
+export async function getBookSuggestion(
+  token: string,
+  input: BookSuggestionInput,
+) {
+  const response = await catalogRequest<{ sugestao: BookSuggestion }>(
+    '/livros/sugestao-ia',
+    token,
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  )
+  return response.sugestao
 }
 
 export async function createEdition(token: string, input: NewEditionInput) {

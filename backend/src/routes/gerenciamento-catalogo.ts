@@ -12,6 +12,7 @@ import {
   listarReferenciasCatalogo,
 } from '../catalogo/servico-gerenciamento.js'
 import { PerfilUsuario } from '../generated/prisma/enums.js'
+import { sugerirDadosLivro } from '../ia/servico-enriquecimento-livro.js'
 import {
   exigirAutenticacao,
   exigirPerfis,
@@ -27,6 +28,7 @@ import {
   livroIdParametroSchema,
   ofertaIdParametroSchema,
 } from '../schemas/catalogo.js'
+import { solicitarSugestaoLivroSchema } from '../schemas/ia.js'
 
 export const gerenciamentoCatalogoRouter = Router()
 
@@ -55,6 +57,48 @@ gerenciamentoCatalogoRouter.get('/referencias', async (_request, response) => {
   const referencias = await listarReferenciasCatalogo()
   response.status(200).json(referencias)
 })
+
+/**
+ * @openapi
+ * /api/gerenciamento/catalogo/livros/sugestao-ia:
+ *   post:
+ *     tags: [Gerenciamento do catalogo]
+ *     summary: Sugere dados para o cadastro de um livro usando IA
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [titulo]
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               autor:
+ *                 type: string
+ *               isbn:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Sugestao gerada para revisao do vendedor
+ *       400:
+ *         description: Dados da consulta invalidos
+ *       502:
+ *         description: Servico de IA indisponivel
+ *       503:
+ *         description: Chave da IA nao configurada
+ */
+gerenciamentoCatalogoRouter.post(
+  '/livros/sugestao-ia',
+  async (request, response) => {
+    const sugestao = await sugerirDadosLivro(
+      solicitarSugestaoLivroSchema.parse(request.body),
+    )
+    response.status(200).json({ sugestao })
+  },
+)
 
 /**
  * @openapi
