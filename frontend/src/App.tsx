@@ -31,6 +31,7 @@ import { CatalogManager } from './CatalogManager'
 import { CustomerCatalog } from './CustomerCatalog'
 import { MyReviews } from './MyReviews'
 import { PersonalLibrary } from './PersonalLibrary'
+import { ReviewManager } from './ReviewManager'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
@@ -457,15 +458,26 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
             </>
           )}
           {canManageCatalog && (
-            <button
-              type="button"
-              className={view === 'LOJA' ? 'active' : undefined}
-              aria-current={view === 'LOJA' ? 'page' : undefined}
-              onClick={() => setView('LOJA')}
-            >
-              <Store size={18} aria-hidden="true" />
-              <span>Minha loja</span>
-            </button>
+            <>
+              <button
+                type="button"
+                className={view === 'LOJA' ? 'active' : undefined}
+                aria-current={view === 'LOJA' ? 'page' : undefined}
+                onClick={() => setView('LOJA')}
+              >
+                <Store size={18} aria-hidden="true" />
+                <span>Minha loja</span>
+              </button>
+              <button
+                type="button"
+                className={view === 'GERENCIAR_AVALIACOES' ? 'active' : undefined}
+                aria-current={view === 'GERENCIAR_AVALIACOES' ? 'page' : undefined}
+                onClick={() => setView('GERENCIAR_AVALIACOES')}
+              >
+                <MessageSquareText size={18} aria-hidden="true" />
+                <span>Avaliações</span>
+              </button>
+            </>
           )}
         </nav>
         <div className="user-menu">
@@ -498,6 +510,10 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
 
       {view === 'LOJA' && canManageCatalog && (
         <CatalogManager token={session.token} />
+      )}
+
+      {view === 'GERENCIAR_AVALIACOES' && canManageCatalog && (
+        <ReviewManager token={session.token} />
       )}
 
       {view === 'BIBLIOTECA' && canUsePersonalLibrary && (
