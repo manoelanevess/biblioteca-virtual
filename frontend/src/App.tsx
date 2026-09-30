@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
+  ArrowLeft,
   ArrowRight,
   BookOpen,
   Compass,
@@ -7,16 +8,17 @@ import {
   EyeOff,
   LibraryBig,
   LoaderCircle,
+  LogIn,
   LockKeyhole,
   LogOut,
   Mail,
   Store,
   User,
+  UserPlus,
 } from 'lucide-react'
 import {
   ApiError,
   clearSession,
-  enableSellerProfile,
   getCurrentUser,
   getStoredSession,
   login,
@@ -34,6 +36,7 @@ type WorkspaceView = 'CATALOGO' | 'BIBLIOTECA' | 'LOJA'
 
 function App() {
   const [mode, setMode] = useState<AuthMode>('login')
+  const [showAuthentication, setShowAuthentication] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [initialSession] = useState(getStoredSession)
   const [session, setSession] = useState<Session | null>(initialSession)
@@ -89,6 +92,7 @@ function App() {
 
       saveSession(nextSession)
       setSession(nextSession)
+      setShowAuthentication(false)
     } catch (submitError) {
       setError(
         submitError instanceof ApiError
@@ -104,12 +108,8 @@ function App() {
     clearSession()
     setSession(null)
     setMode('login')
+    setShowAuthentication(false)
     setError(null)
-  }
-
-  function handleSessionChange(nextSession: Session) {
-    saveSession(nextSession)
-    setSession(nextSession)
   }
 
   if (restoringSession) {
@@ -117,11 +117,20 @@ function App() {
   }
 
   if (session) {
+    return <AuthenticatedArea session={session} onLogout={handleLogout} />
+  }
+
+  if (!showAuthentication) {
     return (
-      <AuthenticatedArea
-        session={session}
-        onLogout={handleLogout}
-        onSessionChange={handleSessionChange}
+      <GuestCatalog
+        onLogin={() => {
+          changeMode('login')
+          setShowAuthentication(true)
+        }}
+        onRegister={() => {
+          changeMode('register')
+          setShowAuthentication(true)
+        }}
       />
     )
   }
@@ -163,6 +172,15 @@ function App() {
         <div className="mobile-brand">
           <Brand />
         </div>
+
+        <button
+          className="catalog-return"
+          type="button"
+          onClick={() => setShowAuthentication(false)}
+        >
+          <ArrowLeft size={17} aria-hidden="true" />
+          Voltar ao catálogo
+        </button>
 
         <div className="auth-card">
           <div className="auth-tabs" role="tablist" aria-label="Acesso">
@@ -338,23 +356,52 @@ function SessionLoading() {
   )
 }
 
+type GuestCatalogProps = {
+  onLogin: () => void
+  onRegister: () => void
+}
+
+function GuestCatalog({ onLogin, onRegister }: GuestCatalogProps) {
+  return (
+    <main className="workspace-page public-workspace">
+      <header className="workspace-header public-header">
+        <Brand />
+        <nav className="workspace-navigation" aria-label="Catálogo público">
+          <button type="button" className="active" aria-current="page">
+            <Compass size={18} aria-hidden="true" />
+            <span>Explorar</span>
+          </button>
+        </nav>
+        <div className="public-access-actions">
+          <button type="button" onClick={onLogin}>
+            <LogIn size={17} aria-hidden="true" />
+            Entrar
+          </button>
+          <button className="primary" type="button" onClick={onRegister}>
+            <UserPlus size={17} aria-hidden="true" />
+            Criar conta
+          </button>
+        </div>
+      </header>
+
+      <CustomerCatalog
+        token={null}
+        currentUserId={null}
+        onAuthenticationRequired={onLogin}
+      />
+    </main>
+  )
+}
+
 type AuthenticatedAreaProps = {
   session: Session
   onLogout: () => void
-  onSessionChange: (session: Session) => void
 }
 
-function AuthenticatedArea({
-  session,
-  onLogout,
-  onSessionChange,
-}: AuthenticatedAreaProps) {
+function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
   const [view, setView] = useState<WorkspaceView>(
     session.user.role === 'CLIENTE' ? 'CATALOGO' : 'LOJA',
   )
-  const [sellerDialogOpen, setSellerDialogOpen] = useState(false)
-  const [activatingSeller, setActivatingSeller] = useState(false)
-  const [sellerError, setSellerError] = useState<string | null>(null)
   const firstName = session.user.name.trim().split(/\s+/)[0]
   const initials = session.user.name
     .trim()
@@ -364,25 +411,6 @@ function AuthenticatedArea({
     .join('')
     .toUpperCase()
   const canManageCatalog = session.user.role !== 'CLIENTE'
-
-  async function handleSellerActivation() {
-    setActivatingSeller(true)
-    setSellerError(null)
-
-    try {
-      const nextSession = await enableSellerProfile(session.token)
-      onSessionChange(nextSession)
-      setView('LOJA')
-    } catch (activationError) {
-      setSellerError(
-        activationError instanceof ApiError
-          ? activationError.message
-          : 'Não foi possível ativar o perfil de vendedor.',
-      )
-    } finally {
-      setActivatingSeller(false)
-    }
-  }
 
   return (
     <main className="workspace-page">
@@ -453,87 +481,6 @@ function AuthenticatedArea({
       {view === 'BIBLIOTECA' && (
         <section className="workspace-content">
           <PersonalLibrary token={session.token} firstName={firstName} />
-
-          {!canManageCatalog && (
-            <>
-              <section className="seller-invitation">
-                <span className="seller-invitation-icon" aria-hidden="true">
-                  <Store size={23} />
-                </span>
-                <div>
-                  <h2>Quer vender seus livros?</h2>
-                  <p>
-                    Ative as ferramentas de catálogo e acompanhe suas ofertas.
-                  </p>
-                </div>
-                <button
-                  className="seller-activation-button"
-                  type="button"
-                  onClick={() => {
-                    setSellerError(null)
-                    setSellerDialogOpen(true)
-                  }}
-                >
-                  Começar a vender
-                </button>
-              </section>
-
-              {sellerDialogOpen && (
-                <div className="seller-dialog-overlay" role="presentation">
-                  <section
-                    className="seller-dialog"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="seller-dialog-title"
-                  >
-                    <span className="seller-dialog-icon" aria-hidden="true">
-                      <Store size={24} />
-                    </span>
-                    <h2 id="seller-dialog-title">
-                      Ativar perfil de vendedor?
-                    </h2>
-                    <p>
-                      Sua conta receberá acesso ao cadastro de livros, ofertas
-                      e indicadores de venda.
-                    </p>
-
-                    {sellerError && (
-                      <p className="seller-dialog-error" role="alert">
-                        {sellerError}
-                      </p>
-                    )}
-
-                    <footer>
-                      <button
-                        className="seller-dialog-cancel"
-                        type="button"
-                        onClick={() => setSellerDialogOpen(false)}
-                        disabled={activatingSeller}
-                      >
-                        Agora não
-                      </button>
-                      <button
-                        className="seller-activation-button"
-                        type="button"
-                        onClick={() => void handleSellerActivation()}
-                        disabled={activatingSeller}
-                      >
-                        {activatingSeller ? (
-                          <LoaderCircle
-                            className="button-loader"
-                            size={18}
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          'Ativar perfil'
-                        )}
-                      </button>
-                    </footer>
-                  </section>
-                </div>
-              )}
-            </>
-          )}
         </section>
       )}
     </main>

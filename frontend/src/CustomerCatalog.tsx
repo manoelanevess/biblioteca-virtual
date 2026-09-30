@@ -79,8 +79,9 @@ const brazilianStates = [
 ] as const
 
 type CustomerCatalogProps = {
-  token: string
-  currentUserId: string
+  token: string | null
+  currentUserId: string | null
+  onAuthenticationRequired?: () => void
 }
 
 type CheckoutSelection = {
@@ -92,6 +93,7 @@ type CheckoutSelection = {
 export function CustomerCatalog({
   token,
   currentUserId,
+  onAuthenticationRequired,
 }: CustomerCatalogProps) {
   const [books, setBooks] = useState<PublicBook[]>([])
   const [categories, setCategories] = useState<PublicCategory[]>([])
@@ -244,6 +246,11 @@ export function CustomerCatalog({
     edition: PublicEdition,
     offer: PublicOffer,
   ) {
+    if (!token) {
+      onAuthenticationRequired?.()
+      return
+    }
+
     setPurchaseResult(null)
     setCheckout({ book, edition, offer })
   }
@@ -459,12 +466,14 @@ export function CustomerCatalog({
                 onClose={closeDetail}
               />
             ) : checkout ? (
-              <PurchaseCheckout
-                token={token}
-                selection={checkout}
-                onBack={() => setCheckout(null)}
-                onComplete={finishPurchase}
-              />
+              token ? (
+                <PurchaseCheckout
+                  token={token}
+                  selection={checkout}
+                  onBack={() => setCheckout(null)}
+                  onComplete={finishPurchase}
+                />
+              ) : null
             ) : detailLoading ? (
               <div className="detail-loading" aria-label="Carregando detalhes">
                 <LoaderCircle size={26} aria-hidden="true" />
@@ -487,6 +496,7 @@ export function CustomerCatalog({
               <BookDetail
                 book={selectedBook}
                 currentUserId={currentUserId}
+                authenticated={Boolean(token)}
                 onBuy={(edition, offer) =>
                   startCheckout(selectedBook, edition, offer)
                 }
@@ -538,11 +548,17 @@ function BookCard({ book, onOpen }: { book: PublicBook; onOpen: () => void }) {
 
 type BookDetailProps = {
   book: PublicBook
-  currentUserId: string
+  currentUserId: string | null
+  authenticated: boolean
   onBuy: (edition: PublicEdition, offer: PublicOffer) => void
 }
 
-function BookDetail({ book, currentUserId, onBuy }: BookDetailProps) {
+function BookDetail({
+  book,
+  currentUserId,
+  authenticated,
+  onBuy,
+}: BookDetailProps) {
   return (
     <div className="book-detail-content">
       <div className="detail-summary">
@@ -568,6 +584,7 @@ function BookDetail({ book, currentUserId, onBuy }: BookDetailProps) {
             key={edition.id}
             edition={edition}
             currentUserId={currentUserId}
+            authenticated={authenticated}
             onBuy={(offer) => onBuy(edition, offer)}
           />
         ))}
@@ -578,13 +595,15 @@ function BookDetail({ book, currentUserId, onBuy }: BookDetailProps) {
 
 type EditionOffersProps = {
   edition: PublicEdition
-  currentUserId: string
+  currentUserId: string | null
+  authenticated: boolean
   onBuy: (offer: PublicOffer) => void
 }
 
 function EditionOffers({
   edition,
   currentUserId,
+  authenticated,
   onBuy,
 }: EditionOffersProps) {
   const metadata = [
@@ -624,7 +643,11 @@ function EditionOffers({
                   disabled={isOwnOffer || isUnavailable}
                   title={isOwnOffer ? 'Esta oferta pertence a você' : undefined}
                 >
-                  {isOwnOffer ? 'Sua oferta' : 'Comprar'}
+                  {isOwnOffer
+                    ? 'Sua oferta'
+                    : authenticated
+                      ? 'Comprar'
+                      : 'Entrar para comprar'}
                 </button>
               </div>
             </div>
