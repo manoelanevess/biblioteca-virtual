@@ -198,6 +198,25 @@ export function CatalogManager({ token }: CatalogManagerProps) {
     [offers],
   )
 
+  const performance = useMemo(() => {
+    const items = offers.map((offer) => ({
+      id: offer.id,
+      label: offer.edicao.livro.titulo,
+      format: offer.edicao.formato === 'FISICO' ? 'Físico' : 'E-book',
+      views: offer.metricas.visualizacoes,
+      sales: offer.metricas.vendas,
+    }))
+
+    return {
+      views: [...items]
+        .sort((itemA, itemB) => itemB.views - itemA.views)
+        .slice(0, 5),
+      sales: [...items]
+        .sort((itemA, itemB) => itemB.sales - itemA.sales)
+        .slice(0, 5),
+    }
+  }, [offers])
+
   return (
     <section className="catalog-manager">
       <header className="manager-heading">
@@ -262,6 +281,25 @@ export function CatalogManager({ token }: CatalogManagerProps) {
           icon={<ShoppingBag size={20} />}
           label="Vendas"
           value={metrics.sales}
+        />
+      </div>
+
+      <div className="performance-grid" aria-label="Desempenho da loja">
+        <PerformanceChart
+          title="Livros mais visualizados"
+          emptyLabel="As visualizações aparecerão quando os livros forem abertos no catálogo."
+          items={performance.views.map((item) => ({
+            ...item,
+            value: item.views,
+          }))}
+        />
+        <PerformanceChart
+          title="Livros mais vendidos"
+          emptyLabel="As vendas concluídas aparecerão neste gráfico."
+          items={performance.sales.map((item) => ({
+            ...item,
+            value: item.sales,
+          }))}
         />
       </div>
 
@@ -380,6 +418,49 @@ function Metric({
         <strong>{value.toLocaleString('pt-BR')}</strong>
       </div>
     </article>
+  )
+}
+
+function PerformanceChart({
+  title,
+  emptyLabel,
+  items,
+}: {
+  title: string
+  emptyLabel: string
+  items: Array<{
+    id: string
+    label: string
+    format: string
+    value: number
+  }>
+}) {
+  const maximum = Math.max(...items.map((item) => item.value), 0)
+
+  return (
+    <section className="performance-chart">
+      <header>
+        <h2>{title}</h2>
+      </header>
+      {maximum > 0 ? (
+        <div className="chart-bars">
+          {items.map((item) => (
+            <div className="chart-row" key={item.id}>
+              <div className="chart-label">
+                <span>{item.label}</span>
+                <small>{item.format}</small>
+              </div>
+              <div className="chart-track" aria-hidden="true">
+                <span style={{ width: `${(item.value / maximum) * 100}%` }} />
+              </div>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="chart-empty">{emptyLabel}</p>
+      )}
+    </section>
   )
 }
 
@@ -523,6 +604,7 @@ function RegistrationPanel({
     string | null
   >(null)
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiApplied, setAiApplied] = useState(false)
   const [aiNotice, setAiNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [referenceSubmitting, setReferenceSubmitting] = useState(false)
@@ -566,6 +648,7 @@ function RegistrationPanel({
       setSelectedCategoryId(matchingCategory?.id ?? suggestedCategoryId)
       setSynopsis(suggestion.sinopse)
       setLanguage(suggestion.idioma)
+      setAiApplied(true)
       setAiNotice('Sugestões preenchidas. Revise os dados antes de continuar.')
     } catch (suggestionError) {
       setError(getErrorMessage(suggestionError))
@@ -627,6 +710,7 @@ function RegistrationPanel({
           urlCapa: getOptionalValue(formData, 'coverUrl'),
           idioma: getRequiredValue(formData, 'language'),
           destaque: formData.get('highlight') === 'on',
+          enriquecidoPorIa: aiApplied,
           autorIds: [authorId],
           categoriaIds: [categoryId],
         })

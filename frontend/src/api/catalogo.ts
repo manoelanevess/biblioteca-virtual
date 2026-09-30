@@ -1,4 +1,5 @@
 import { ApiError } from './autenticacao'
+import { apiUrl } from './base'
 
 export type BookFormat = 'FISICO' | 'EBOOK'
 export type OfferStatus = 'RASCUNHO' | 'ATIVA' | 'INATIVA'
@@ -78,6 +79,7 @@ export type PublicBook = {
   urlCapa: string | null
   idioma: string
   destaque: boolean
+  enriquecidoPorIa: boolean
   autores: CatalogAuthor[]
   categorias: CatalogCategory[]
   avaliacao: {
@@ -106,6 +108,7 @@ export type PublicCatalogFilters = {
   formato?: BookFormat
   categoriaId?: string
   destaque?: boolean
+  ordenacao?: 'TITULO' | 'MAIS_RECENTES' | 'MELHOR_AVALIADOS' | 'MENOR_AVALIADOS'
   pagina?: number
   limite?: number
 }
@@ -116,6 +119,7 @@ export type NewBookInput = {
   urlCapa?: string
   idioma: string
   destaque?: boolean
+  enriquecidoPorIa?: boolean
   autorIds: string[]
   categoriaIds: string[]
 }
@@ -167,6 +171,7 @@ export async function getPublicBooks(filters: PublicCatalogFilters = {}) {
   if (filters.destaque !== undefined) {
     searchParams.set('destaque', String(filters.destaque))
   }
+  if (filters.ordenacao) searchParams.set('ordenacao', filters.ordenacao)
   if (filters.pagina) searchParams.set('pagina', String(filters.pagina))
   if (filters.limite) searchParams.set('limite', String(filters.limite))
 
@@ -186,6 +191,22 @@ export async function getPublicCategories() {
     categorias: PublicCategory[]
   }>('/categorias')
   return response.categorias
+}
+
+export async function registerOfferView(offerId: string) {
+  const storageKey = 'biblioteca-virtual-visitor'
+  let sessionId = localStorage.getItem(storageKey)
+
+  if (!sessionId) {
+    sessionId = crypto.randomUUID()
+    localStorage.setItem(storageKey, sessionId)
+  }
+
+  await fetch(apiUrl(`/api/catalogo/ofertas/${offerId}/visualizacoes`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessaoId: sessionId }),
+  })
 }
 
 export async function getCatalogReferences(token: string) {
@@ -313,7 +334,7 @@ async function catalogRequest<T>(
   let response: Response
 
   try {
-    response = await fetch(`/api/gerenciamento/catalogo${path}`, {
+    response = await fetch(apiUrl(`/api/gerenciamento/catalogo${path}`), {
       ...init,
       headers: {
         'Content-Type': 'application/json',
@@ -352,7 +373,7 @@ async function publicCatalogRequest<T>(path: string): Promise<T> {
   let response: Response
 
   try {
-    response = await fetch(`/api/catalogo${path}`)
+    response = await fetch(apiUrl(`/api/catalogo${path}`))
   } catch {
     throw new ApiError(
       'Não foi possível conectar ao servidor.',

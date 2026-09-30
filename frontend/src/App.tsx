@@ -12,6 +12,7 @@ import {
   LockKeyhole,
   LogOut,
   Mail,
+  MessageSquareText,
   Store,
   User,
   UserPlus,
@@ -28,16 +29,26 @@ import {
 } from './api/autenticacao'
 import { CatalogManager } from './CatalogManager'
 import { CustomerCatalog } from './CustomerCatalog'
+import { MyReviews } from './MyReviews'
 import { PersonalLibrary } from './PersonalLibrary'
+import { ReviewManager } from './ReviewManager'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
-type WorkspaceView = 'CATALOGO' | 'BIBLIOTECA' | 'LOJA'
+type RegistrationRole = 'CLIENTE' | 'VENDEDOR'
+type WorkspaceView =
+  | 'CATALOGO'
+  | 'BIBLIOTECA'
+  | 'MINHAS_AVALIACOES'
+  | 'LOJA'
+  | 'GERENCIAR_AVALIACOES'
 
 function App() {
   const [mode, setMode] = useState<AuthMode>('login')
   const [showAuthentication, setShowAuthentication] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [registrationRole, setRegistrationRole] =
+    useState<RegistrationRole>('CLIENTE')
   const [initialSession] = useState(getStoredSession)
   const [session, setSession] = useState<Session | null>(initialSession)
   const [restoringSession, setRestoringSession] = useState(
@@ -88,6 +99,7 @@ function App() {
             name: String(formData.get('name') ?? ''),
             email,
             password,
+            role: registrationRole,
           })
 
       saveSession(nextSession)
@@ -223,22 +235,50 @@ function App() {
             aria-busy={submitting}
           >
             {!isLogin && (
-              <label className="field-group">
-                <span>Nome</span>
-                <span className="field-control">
-                  <User size={18} aria-hidden="true" />
-                  <input
-                    name="name"
-                    type="text"
-                    autoComplete="name"
-                    placeholder="Seu nome completo"
-                    minLength={2}
-                    maxLength={120}
-                    disabled={submitting}
-                    required
-                  />
-                </span>
-              </label>
+              <>
+                <fieldset className="registration-role">
+                  <legend>Tipo de conta</legend>
+                  <div>
+                    <button
+                      type="button"
+                      className={registrationRole === 'CLIENTE' ? 'active' : undefined}
+                      aria-pressed={registrationRole === 'CLIENTE'}
+                      onClick={() => setRegistrationRole('CLIENTE')}
+                      disabled={submitting}
+                    >
+                      <User size={17} aria-hidden="true" />
+                      Cliente
+                    </button>
+                    <button
+                      type="button"
+                      className={registrationRole === 'VENDEDOR' ? 'active' : undefined}
+                      aria-pressed={registrationRole === 'VENDEDOR'}
+                      onClick={() => setRegistrationRole('VENDEDOR')}
+                      disabled={submitting}
+                    >
+                      <Store size={17} aria-hidden="true" />
+                      Vendedor
+                    </button>
+                  </div>
+                </fieldset>
+
+                <label className="field-group">
+                  <span>Nome</span>
+                  <span className="field-control">
+                    <User size={18} aria-hidden="true" />
+                    <input
+                      name="name"
+                      type="text"
+                      autoComplete="name"
+                      placeholder="Seu nome completo"
+                      minLength={2}
+                      maxLength={120}
+                      disabled={submitting}
+                      required
+                    />
+                  </span>
+                </label>
+              </>
             )}
 
             <label className="field-group">
@@ -428,26 +468,48 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
             <span>Explorar</span>
           </button>
           {canUsePersonalLibrary && (
-            <button
-              type="button"
-              className={view === 'BIBLIOTECA' ? 'active' : undefined}
-              aria-current={view === 'BIBLIOTECA' ? 'page' : undefined}
-              onClick={() => setView('BIBLIOTECA')}
-            >
-              <LibraryBig size={18} aria-hidden="true" />
-              <span>Minha biblioteca</span>
-            </button>
+            <>
+              <button
+                type="button"
+                className={view === 'BIBLIOTECA' ? 'active' : undefined}
+                aria-current={view === 'BIBLIOTECA' ? 'page' : undefined}
+                onClick={() => setView('BIBLIOTECA')}
+              >
+                <LibraryBig size={18} aria-hidden="true" />
+                <span>Minha biblioteca</span>
+              </button>
+              <button
+                type="button"
+                className={view === 'MINHAS_AVALIACOES' ? 'active' : undefined}
+                aria-current={view === 'MINHAS_AVALIACOES' ? 'page' : undefined}
+                onClick={() => setView('MINHAS_AVALIACOES')}
+              >
+                <MessageSquareText size={18} aria-hidden="true" />
+                <span>Minhas avaliações</span>
+              </button>
+            </>
           )}
           {canManageCatalog && (
-            <button
-              type="button"
-              className={view === 'LOJA' ? 'active' : undefined}
-              aria-current={view === 'LOJA' ? 'page' : undefined}
-              onClick={() => setView('LOJA')}
-            >
-              <Store size={18} aria-hidden="true" />
-              <span>Minha loja</span>
-            </button>
+            <>
+              <button
+                type="button"
+                className={view === 'LOJA' ? 'active' : undefined}
+                aria-current={view === 'LOJA' ? 'page' : undefined}
+                onClick={() => setView('LOJA')}
+              >
+                <Store size={18} aria-hidden="true" />
+                <span>Minha loja</span>
+              </button>
+              <button
+                type="button"
+                className={view === 'GERENCIAR_AVALIACOES' ? 'active' : undefined}
+                aria-current={view === 'GERENCIAR_AVALIACOES' ? 'page' : undefined}
+                onClick={() => setView('GERENCIAR_AVALIACOES')}
+              >
+                <MessageSquareText size={18} aria-hidden="true" />
+                <span>Avaliações</span>
+              </button>
+            </>
           )}
         </nav>
         <div className="user-menu">
@@ -474,6 +536,7 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
         <CustomerCatalog
           token={session.token}
           currentUserId={session.user.id}
+          canReview={session.user.role === 'CLIENTE'}
         />
       )}
 
@@ -481,10 +544,18 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
         <CatalogManager token={session.token} />
       )}
 
+      {view === 'GERENCIAR_AVALIACOES' && canManageCatalog && (
+        <ReviewManager token={session.token} />
+      )}
+
       {view === 'BIBLIOTECA' && canUsePersonalLibrary && (
         <section className="workspace-content">
           <PersonalLibrary token={session.token} firstName={firstName} />
         </section>
+      )}
+
+      {view === 'MINHAS_AVALIACOES' && canUsePersonalLibrary && (
+        <MyReviews token={session.token} />
       )}
     </main>
   )

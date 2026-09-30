@@ -1,0 +1,2 @@
+ALTER TABLE "Livro"
+ADD COLUMN "enriquecidoPorIa" BOOLEAN NOT NULL DEFAULT false;

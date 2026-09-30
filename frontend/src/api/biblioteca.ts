@@ -1,4 +1,5 @@
 import { ApiError } from './autenticacao'
+import { apiUrl } from './base'
 import type { BookFormat, CatalogAuthor, CatalogCategory } from './catalogo'
 
 export type ReadingStatus = 'NAO_INICIADO' | 'LENDO' | 'CONCLUIDO'
@@ -66,7 +67,7 @@ async function libraryRequest<T>(
   let response: Response
 
   try {
-    response = await fetch(`/api/biblioteca${path}`, {
+    response = await fetch(apiUrl(`/api/biblioteca${path}`), {
       ...init,
       headers: {
         'Content-Type': 'application/json',

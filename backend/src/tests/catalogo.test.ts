@@ -11,6 +11,7 @@ import {
   criarOfertaSchema,
   listarLivrosSchema,
   livroIdParametroSchema,
+  registrarVisualizacaoSchema,
 } from '../schemas/catalogo.js'
 
 describe('consulta do catalogo', () => {
@@ -18,6 +19,7 @@ describe('consulta do catalogo', () => {
     const resultado = listarLivrosSchema.parse({})
 
     assert.deepEqual(resultado, {
+      ordenacao: 'TITULO',
       pagina: 1,
       limite: 12,
     })
@@ -34,6 +36,7 @@ describe('consulta do catalogo', () => {
     assert.deepEqual(resultado, {
       termo: 'fantasia',
       formato: 'EBOOK',
+      ordenacao: 'TITULO',
       pagina: 2,
       limite: 24,
     })
@@ -53,6 +56,17 @@ describe('consulta do catalogo', () => {
     )
   })
 
+  it('aceita as opcoes de ordenacao do catalogo', () => {
+    assert.equal(
+      listarLivrosSchema.parse({ ordenacao: 'MAIS_RECENTES' }).ordenacao,
+      'MAIS_RECENTES',
+    )
+    assert.equal(
+      listarLivrosSchema.safeParse({ ordenacao: 'MAIS_VENDIDOS' }).success,
+      false,
+    )
+  })
+
   it('valida o identificador usado no detalhe do livro', () => {
     const valido = livroIdParametroSchema.safeParse({
       livroId: '04b26139-fe63-40c1-bb98-0f01ad7a4d22',
@@ -61,6 +75,14 @@ describe('consulta do catalogo', () => {
 
     assert.equal(valido.success, true)
     assert.equal(invalido.success, false)
+  })
+
+  it('aceita uma sessao valida ao registrar visualizacao', () => {
+    const resultado = registrarVisualizacaoSchema.safeParse({
+      sessaoId: '04b26139-fe63-40c1-bb98-0f01ad7a4d22',
+    })
+
+    assert.equal(resultado.success, true)
   })
 })
 

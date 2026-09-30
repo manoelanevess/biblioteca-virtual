@@ -40,6 +40,7 @@ export const criarLivroSchema = z
     urlCapa: z.string().url().optional(),
     idioma: z.string().trim().min(2).max(10).default('pt-BR'),
     destaque: z.boolean().default(false),
+    enriquecidoPorIa: z.boolean().default(false),
     autorIds: idsUnicosSchema.max(20),
     categoriaIds: idsUnicosSchema.max(20),
   })
@@ -84,6 +85,12 @@ export const ofertaIdParametroSchema = z
   })
   .strict()
 
+export const registrarVisualizacaoSchema = z
+  .object({
+    sessaoId: z.string().uuid().optional(),
+  })
+  .strict()
+
 export const alterarStatusOfertaSchema = z
   .object({
     status: z.enum(['RASCUNHO', 'ATIVA', 'INATIVA']),
@@ -99,6 +106,9 @@ export const listarLivrosSchema = z
       .enum(['true', 'false'])
       .transform((valor) => valor === 'true')
       .optional(),
+    ordenacao: z
+      .enum(['TITULO', 'MAIS_RECENTES', 'MELHOR_AVALIADOS', 'MENOR_AVALIADOS'])
+      .default('TITULO'),
     pagina: z.coerce.number().int().min(1).default(1),
     limite: z.coerce.number().int().min(1).max(50).default(12),
   })
@@ -117,6 +127,9 @@ export const alterarDestaqueLivroSchema = z
   .strict()
 
 export type ListarLivrosEntrada = z.infer<typeof listarLivrosSchema>
+export type RegistrarVisualizacaoEntrada = z.infer<
+  typeof registrarVisualizacaoSchema
+>
 export type CriarAutorEntrada = z.infer<typeof criarAutorSchema>
 export type CriarCategoriaEntrada = z.infer<typeof criarCategoriaSchema>
 export type CriarLivroEntrada = z.infer<typeof criarLivroSchema>

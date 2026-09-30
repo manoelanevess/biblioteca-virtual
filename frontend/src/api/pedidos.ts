@@ -1,4 +1,5 @@
 import { ApiError } from './autenticacao'
+import { apiUrl } from './base'
 
 export type EnderecoEntregaEntrada = {
   destinatario: string
@@ -34,7 +35,7 @@ export async function criarPedido(
   let response: Response
 
   try {
-    response = await fetch('/api/pedidos', {
+    response = await fetch(apiUrl('/api/pedidos'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

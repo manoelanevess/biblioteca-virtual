@@ -17,6 +17,7 @@ import {
   PackageOpen,
   Search,
   ShoppingBag,
+  Sparkles,
   Star,
   TabletSmartphone,
   X,
@@ -26,6 +27,7 @@ import {
   getPublicBook,
   getPublicBooks,
   getPublicCategories,
+  registerOfferView,
   type BookFormat,
   type PublicBook,
   type PublicCategory,
@@ -37,9 +39,15 @@ import {
   type EnderecoEntregaEntrada,
   type PedidoCriado,
 } from './api/pedidos'
+import { BookReviews } from './BookReviews'
 import './CustomerCatalog.css'
 
 type FormatFilter = 'TODOS' | BookFormat
+type CatalogOrder =
+  | 'TITULO'
+  | 'MAIS_RECENTES'
+  | 'MELHOR_AVALIADOS'
+  | 'MENOR_AVALIADOS'
 
 const emptyPagination = {
   pagina: 1,
@@ -81,6 +89,7 @@ const brazilianStates = [
 type CustomerCatalogProps = {
   token: string | null
   currentUserId: string | null
+  canReview?: boolean
   onAuthenticationRequired?: () => void
 }
 
@@ -93,6 +102,7 @@ type CheckoutSelection = {
 export function CustomerCatalog({
   token,
   currentUserId,
+  canReview = false,
   onAuthenticationRequired,
 }: CustomerCatalogProps) {
   const [books, setBooks] = useState<PublicBook[]>([])
@@ -105,6 +115,7 @@ export function CustomerCatalog({
   const [format, setFormat] = useState<FormatFilter>('TODOS')
   const [categoryId, setCategoryId] = useState('')
   const [featuredOnly, setFeaturedOnly] = useState(false)
+  const [order, setOrder] = useState<CatalogOrder>('TITULO')
   const [page, setPage] = useState(1)
   const [reloadVersion, setReloadVersion] = useState(0)
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
@@ -141,6 +152,7 @@ export function CustomerCatalog({
       formato: format === 'TODOS' ? undefined : format,
       categoriaId: categoryId || undefined,
       destaque: featuredOnly || undefined,
+      ordenacao: order,
       pagina: page,
       limite: emptyPagination.limite,
     })
@@ -162,7 +174,7 @@ export function CustomerCatalog({
     return () => {
       active = false
     }
-  }, [categoryId, featuredOnly, format, page, reloadVersion, searchTerm])
+  }, [categoryId, featuredOnly, format, order, page, reloadVersion, searchTerm])
 
   useEffect(() => {
     if (!selectedBookId) return
@@ -171,7 +183,12 @@ export function CustomerCatalog({
 
     getPublicBook(selectedBookId)
       .then((book) => {
-        if (active) setSelectedBook(book)
+        if (!active) return
+        setSelectedBook(book)
+        const offerIds = book.edicoes.flatMap((edition) =>
+          edition.ofertas.map((offer) => offer.id),
+        )
+        void Promise.allSettled(offerIds.map(registerOfferView))
       })
       .catch((loadError: unknown) => {
         if (active) setDetailError(getErrorMessage(loadError))
@@ -221,6 +238,7 @@ export function CustomerCatalog({
     setFormat('TODOS')
     setCategoryId('')
     setFeaturedOnly(false)
+    setOrder('TITULO')
     setPage(1)
   }
 
@@ -338,6 +356,22 @@ export function CustomerCatalog({
                 {category.nome}
               </option>
             ))}
+          </select>
+
+          <select
+            className="order-filter"
+            value={order}
+            onChange={(event) => {
+              prepareCatalogLoad()
+              setOrder(event.target.value as CatalogOrder)
+              setPage(1)
+            }}
+            aria-label="Ordenar livros"
+          >
+            <option value="TITULO">Título: A-Z</option>
+            <option value="MAIS_RECENTES">Mais recentes</option>
+            <option value="MELHOR_AVALIADOS">Melhores avaliações</option>
+            <option value="MENOR_AVALIADOS">Menores avaliações</option>
           </select>
 
           <button
@@ -518,8 +552,11 @@ export function CustomerCatalog({
             ) : selectedBook ? (
               <BookDetail
                 book={selectedBook}
+                token={token}
                 currentUserId={currentUserId}
                 authenticated={Boolean(token)}
+                canReview={canReview}
+                onAuthenticationRequired={onAuthenticationRequired}
                 onBuy={(edition, offer) =>
                   startCheckout(selectedBook, edition, offer)
                 }
@@ -571,15 +608,21 @@ function BookCard({ book, onOpen }: { book: PublicBook; onOpen: () => void }) {
 
 type BookDetailProps = {
   book: PublicBook
+  token: string | null
   currentUserId: string | null
   authenticated: boolean
+  canReview: boolean
+  onAuthenticationRequired?: () => void
   onBuy: (edition: PublicEdition, offer: PublicOffer) => void
 }
 
 function BookDetail({
   book,
+  token,
   currentUserId,
   authenticated,
+  canReview,
+  onAuthenticationRequired,
   onBuy,
 }: BookDetailProps) {
   return (
@@ -597,6 +640,12 @@ function BookDetail({
           <p className="detail-synopsis">
             {book.sinopse ?? 'Sinopse ainda não informada.'}
           </p>
+          {book.enriquecidoPorIa && (
+            <span className="ai-enriched-note">
+              <Sparkles size={14} aria-hidden="true" />
+              Dados complementados por IA
+            </span>
+          )}
         </div>
       </div>
 
@@ -612,6 +661,14 @@ function BookDetail({
           />
         ))}
       </div>
+
+      <BookReviews
+        bookId={book.id}
+        token={token}
+        currentUserId={currentUserId}
+        canReview={canReview}
+        onAuthenticationRequired={onAuthenticationRequired}
+      />
     </div>
   )
 }

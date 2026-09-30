@@ -84,19 +84,20 @@ model Categoria {
 }
 
 model Livro {
-  id           String           @id @default(uuid()) @db.Uuid
-  titulo       String
-  sinopse      String?          @db.Text
-  urlCapa      String?
-  idioma       String           @default("pt-BR")
-  destaque     Boolean          @default(false)
-  autores      LivroAutor[]
-  categorias   LivroCategoria[]
-  edicoes      EdicaoLivro[]
-  avaliacoes   Avaliacao[]
-  favoritos    Favorito[]
-  criadoEm     DateTime         @default(now())
-  atualizadoEm DateTime         @updatedAt
+  id               String           @id @default(uuid()) @db.Uuid
+  titulo           String
+  sinopse          String?          @db.Text
+  urlCapa          String?
+  idioma           String           @default("pt-BR")
+  destaque         Boolean          @default(false)
+  enriquecidoPorIa Boolean          @default(false)
+  autores          LivroAutor[]
+  categorias       LivroCategoria[]
+  edicoes          EdicaoLivro[]
+  avaliacoes       Avaliacao[]
+  favoritos        Favorito[]
+  criadoEm         DateTime         @default(now())
+  atualizadoEm     DateTime         @updatedAt
 
   @@index([titulo])
   @@index([destaque])
@@ -227,15 +228,17 @@ model ItemBiblioteca {
 }
 
 model Avaliacao {
-  id           String   @id @default(uuid()) @db.Uuid
-  usuarioId    String   @db.Uuid
-  livroId      String   @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  usuarioId    String    @db.Uuid
+  livroId      String    @db.Uuid
   nota         Int
-  comentario   String?  @db.Text
-  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  livro        Livro    @relation(fields: [livroId], references: [id], onDelete: Cascade)
-  criadoEm     DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  comentario   String?   @db.Text
+  resposta     String?   @db.Text
+  respondidaEm DateTime?
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  livro        Livro     @relation(fields: [livroId], references: [id], onDelete: Cascade)
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
 
   @@unique([usuarioId, livroId])
   @@index([livroId])

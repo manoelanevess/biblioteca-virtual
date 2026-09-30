@@ -5,7 +5,10 @@ import {
   FormatoLivro,
   StatusOferta,
 } from '../generated/prisma/enums.js'
-import type { ListarLivrosEntrada } from '../schemas/catalogo.js'
+import type {
+  ListarLivrosEntrada,
+  RegistrarVisualizacaoEntrada,
+} from '../schemas/catalogo.js'
 
 const ofertaDisponivelWhere = {
   status: StatusOferta.ATIVA,
@@ -32,6 +35,8 @@ function criarSelecaoLivro(formato?: FormatoLivro) {
     urlCapa: true,
     idioma: true,
     destaque: true,
+    enriquecidoPorIa: true,
+    criadoEm: true,
     autores: {
       select: {
         autor: {
@@ -85,6 +90,48 @@ type LivroConsultado = Prisma.LivroGetPayload<{
   select: ReturnType<typeof criarSelecaoLivro>
 }>
 
+function calcularMediaAvaliacao(livro: LivroConsultado) {
+  if (!livro.avaliacoes.length) {
+    return null
+  }
+
+  return (
+    livro.avaliacoes.reduce(
+      (total, avaliacao) => total + avaliacao.nota,
+      0,
+    ) / livro.avaliacoes.length
+  )
+}
+
+function ordenarLivros(
+  livros: LivroConsultado[],
+  ordenacao: ListarLivrosEntrada['ordenacao'],
+) {
+  return livros.sort((livroA, livroB) => {
+    if (ordenacao === 'MAIS_RECENTES') {
+      return livroB.criadoEm.getTime() - livroA.criadoEm.getTime()
+    }
+
+    if (
+      ordenacao === 'MELHOR_AVALIADOS' ||
+      ordenacao === 'MENOR_AVALIADOS'
+    ) {
+      const mediaA = calcularMediaAvaliacao(livroA)
+      const mediaB = calcularMediaAvaliacao(livroB)
+
+      if (mediaA === null) return mediaB === null ? 0 : 1
+      if (mediaB === null) return -1
+      if (mediaA !== mediaB) {
+        return ordenacao === 'MELHOR_AVALIADOS'
+          ? mediaB - mediaA
+          : mediaA - mediaB
+      }
+    }
+
+    return livroA.titulo.localeCompare(livroB.titulo, 'pt-BR')
+  })
+}
+
 function mapearLivro(livro: LivroConsultado) {
   const somaNotas = livro.avaliacoes.reduce(
     (total, avaliacao) => total + avaliacao.nota,
@@ -101,6 +148,7 @@ function mapearLivro(livro: LivroConsultado) {
     urlCapa: livro.urlCapa,
     idioma: livro.idioma,
     destaque: livro.destaque,
+    enriquecidoPorIa: livro.enriquecidoPorIa,
     autores: livro.autores.map(({ autor }) => autor),
     categorias: livro.categorias.map(({ categoria }) => categoria),
     avaliacao: {
@@ -186,13 +234,14 @@ export async function listarLivros(entrada: ListarLivrosEntrada) {
   const livros = await prisma.livro.findMany({
     where,
     select: criarSelecaoLivro(entrada.formato),
-    orderBy: { titulo: 'asc' },
-    skip: pular,
-    take: entrada.limite,
   })
+  const livrosDaPagina = ordenarLivros(livros, entrada.ordenacao).slice(
+    pular,
+    pular + entrada.limite,
+  )
 
   return {
-    livros: livros.map(mapearLivro),
+    livros: livrosDaPagina.map(mapearLivro),
     paginacao: {
       pagina: entrada.pagina,
       limite: entrada.limite,
@@ -235,5 +284,37 @@ export async function listarCategorias() {
       descricao: true,
     },
     orderBy: { nome: 'asc' },
+  })
+}
+
+export async function registrarVisualizacaoOferta(
+  ofertaId: string,
+  entrada: RegistrarVisualizacaoEntrada,
+) {
+  const oferta = await prisma.ofertaLivro.findFirst({
+    where: { id: ofertaId, status: StatusOferta.ATIVA },
+    select: { id: true },
+  })
+
+  if (!oferta) {
+    throw new ErroHttp(404, 'OFERTA_NAO_ENCONTRADA', 'Oferta nao encontrada')
+  }
+
+  if (entrada.sessaoId) {
+    const visualizacaoExistente = await prisma.visualizacaoOferta.findFirst({
+      where: { ofertaId, sessaoId: entrada.sessaoId },
+      select: { id: true },
+    })
+
+    if (visualizacaoExistente) {
+      return
+    }
+  }
+
+  await prisma.visualizacaoOferta.create({
+    data: {
+      ofertaId,
+      sessaoId: entrada.sessaoId,
+    },
   })
 }

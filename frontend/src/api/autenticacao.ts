@@ -1,4 +1,7 @@
+import { apiUrl } from './base'
+
 const sessionStorageKey = 'biblioteca-virtual-session'
+const clientIdStorageKey = 'biblioteca-virtual-client-id'
 
 export type UserRole = 'CLIENTE' | 'VENDEDOR' | 'ADMINISTRADOR'
 
@@ -70,6 +73,7 @@ export async function register(input: {
   name: string
   email: string
   password: string
+  role?: 'CLIENTE' | 'VENDEDOR'
 }) {
   const response = await request<AuthenticationResponse>(
     '/api/autenticacao/registro',
@@ -83,7 +87,11 @@ export async function register(input: {
     },
   )
 
-  return mapSession(response)
+  const session = mapSession(response)
+
+  return input.role === 'VENDEDOR'
+    ? enableSellerProfile(session.token)
+    : session
 }
 
 export async function getCurrentUser(token: string) {
@@ -133,7 +141,9 @@ export function getStoredSession(): Session | null {
       return null
     }
 
-    return session as Session
+    const validSession = session as Session
+    syncClientId(validSession)
+    return validSession
   } catch {
     clearSession()
     return null
@@ -142,17 +152,28 @@ export function getStoredSession(): Session | null {
 
 export function saveSession(session: Session) {
   localStorage.setItem(sessionStorageKey, JSON.stringify(session))
+  syncClientId(session)
 }
 
 export function clearSession() {
   localStorage.removeItem(sessionStorageKey)
+  localStorage.removeItem(clientIdStorageKey)
+}
+
+function syncClientId(session: Session) {
+  if (session.user.role === 'CLIENTE') {
+    localStorage.setItem(clientIdStorageKey, session.user.id)
+    return
+  }
+
+  localStorage.removeItem(clientIdStorageKey)
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response
 
   try {
-    response = await fetch(path, {
+    response = await fetch(apiUrl(path), {
       ...init,
       headers: {
         'Content-Type': 'application/json',
