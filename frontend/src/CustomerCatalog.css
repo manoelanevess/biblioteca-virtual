@@ -150,6 +150,35 @@
   box-shadow: 0 0 0 3px rgba(57, 115, 99, 0.12);
 }
 
+.featured-filter {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  color: #5f6e67;
+  background: #ffffff;
+  border: 1px solid #ccd5d0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.featured-filter:hover {
+  color: #325f52;
+  background: #f3f7f5;
+  border-color: #a9bdb4;
+}
+
+.featured-filter.active {
+  color: #6e5313;
+  background: #faf0d2;
+  border-color: #ddc575;
+}
+
 .clear-filters {
   min-height: 38px;
   display: inline-flex;
@@ -290,6 +319,7 @@
 }
 
 .public-book-cover {
+  position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   color: #f6f2e8;
@@ -303,7 +333,7 @@
   object-fit: cover;
 }
 
-.public-book-cover > span {
+.book-cover-placeholder {
   width: 100%;
   height: 100%;
   display: flex;
@@ -315,28 +345,47 @@
   box-shadow: inset 8px 0 rgba(255, 255, 255, 0.08);
 }
 
-.public-book-cover > span strong {
+.book-cover-placeholder strong {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.15rem;
   letter-spacing: 0;
 }
 
 .book-card:nth-child(4n + 2) .public-book-cover,
-.book-card:nth-child(4n + 2) .public-book-cover > span {
+.book-card:nth-child(4n + 2) .book-cover-placeholder {
   color: #442d29;
   background-color: #e3a58f;
 }
 
 .book-card:nth-child(4n + 3) .public-book-cover,
-.book-card:nth-child(4n + 3) .public-book-cover > span {
+.book-card:nth-child(4n + 3) .book-cover-placeholder {
   color: #4d3a0e;
   background-color: #e4c76f;
 }
 
 .book-card:nth-child(4n + 4) .public-book-cover,
-.book-card:nth-child(4n + 4) .public-book-cover > span {
+.book-card:nth-child(4n + 4) .book-cover-placeholder {
   color: #244453;
   background-color: #b8d4df;
+}
+
+.featured-book-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  color: #60480e;
+  background: #f7e7ad;
+  border: 1px solid rgba(111, 79, 9, 0.18);
+  border-radius: 5px;
+  box-shadow: 0 2px 6px rgba(37, 49, 43, 0.14);
+  font-size: 0.65rem;
+  font-weight: 850;
 }
 
 .book-card-content {
@@ -1140,6 +1189,10 @@
   .category-filter {
     width: 100%;
     flex-basis: 100%;
+  }
+
+  .featured-filter {
+    flex: 1;
   }
 
   .book-grid {

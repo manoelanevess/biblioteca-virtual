@@ -157,11 +157,36 @@
 }
 
 .auth-panel {
+  position: relative;
   min-height: 100vh;
   padding: 48px clamp(32px, 7vw, 112px);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.catalog-return {
+  position: absolute;
+  top: 28px;
+  left: clamp(24px, 4vw, 56px);
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  color: #52625b;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.catalog-return:hover {
+  color: #173e35;
+  background: #e8eeeb;
 }
 
 .mobile-brand {
@@ -436,6 +461,47 @@
   color: #173e35;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(20, 50, 42, 0.12);
+}
+
+.public-access-actions {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 8px;
+}
+
+.public-access-actions button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  color: #315047;
+  background: #ffffff;
+  border: 1px solid #cdd8d3;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.public-access-actions button:hover {
+  color: #173e35;
+  background: #f0f4f2;
+  border-color: #9fb3aa;
+}
+
+.public-access-actions button.primary {
+  color: #ffffff;
+  background: #1f594a;
+  border-color: #1f594a;
+}
+
+.public-access-actions button.primary:hover {
+  background: #17483c;
+  border-color: #17483c;
 }
 
 .user-menu {
@@ -715,7 +781,7 @@
 }
 
 button:focus-visible {
-  outline: 3px solid rgba(240, 198, 97, 0.7);
+  outline: 3px solid rgba(57, 115, 99, 0.3);
   outline-offset: 2px;
 }
 
@@ -778,6 +844,12 @@ textarea:focus-visible {
     min-height: 100svh;
     padding: 24px clamp(20px, 7vw, 36px) 40px;
     display: block;
+  }
+
+  .catalog-return {
+    top: 22px;
+    right: clamp(14px, 5vw, 28px);
+    left: auto;
   }
 
   .mobile-brand {
@@ -850,6 +922,17 @@ textarea:focus-visible {
     display: none;
   }
 
+  .public-access-actions {
+    gap: 6px;
+  }
+
+  .public-access-actions button {
+    min-height: 36px;
+    gap: 5px;
+    padding-inline: 9px;
+    font-size: 0.7rem;
+  }
+
   .workspace-content {
     width: min(100% - 32px, 1120px);
     padding: 52px 0;
@@ -878,6 +961,14 @@ textarea:focus-visible {
 @media (max-width: 380px) {
   .auth-panel {
     padding-inline: 16px;
+  }
+
+  .mobile-brand .brand-lockup > span:last-child {
+    display: none;
+  }
+
+  .public-access-actions button {
+    padding-inline: 7px;
   }
 
   .auth-card {

@@ -7,6 +7,7 @@ import {
   StatusOferta,
 } from '../generated/prisma/enums.js'
 import type {
+  AlterarDestaqueLivroEntrada,
   AlterarStatusOfertaEntrada,
   CriarAutorEntrada,
   CriarCategoriaEntrada,
@@ -21,6 +22,7 @@ const selecaoLivroGerenciado = {
   sinopse: true,
   urlCapa: true,
   idioma: true,
+  destaque: true,
   autores: {
     select: { autor: { select: { id: true, nome: true } } },
   },
@@ -48,6 +50,7 @@ const selecaoOfertaGerenciada = {
           id: true,
           titulo: true,
           urlCapa: true,
+          destaque: true,
         },
       },
     },
@@ -112,6 +115,7 @@ function criarLivroNoBanco(entrada: CriarLivroEntrada) {
       sinopse: entrada.sinopse,
       urlCapa: entrada.urlCapa,
       idioma: entrada.idioma,
+      destaque: entrada.destaque,
       autores: {
         create: entrada.autorIds.map((autorId) => ({
           autor: { connect: { id: autorId } },
@@ -225,6 +229,26 @@ export async function criarLivro(entrada: CriarLivroEntrada) {
   }
 
   return mapearLivroGerenciado(await criarLivroNoBanco(entrada))
+}
+
+export async function alterarDestaqueLivro(
+  livroId: string,
+  entrada: AlterarDestaqueLivroEntrada,
+) {
+  const livro = await prisma.livro.findUnique({
+    where: { id: livroId },
+    select: { id: true },
+  })
+
+  if (!livro) {
+    throw new ErroHttp(404, 'LIVRO_NAO_ENCONTRADO', 'Livro nao encontrado')
+  }
+
+  return prisma.livro.update({
+    where: { id: livroId },
+    data: { destaque: entrada.destaque },
+    select: { id: true, titulo: true, destaque: true },
+  })
 }
 
 export async function criarEdicao(entrada: CriarEdicaoEntrada) {

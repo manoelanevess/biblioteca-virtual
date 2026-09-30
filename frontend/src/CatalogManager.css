@@ -319,7 +319,7 @@
 }
 
 .offer-table th:last-child {
-  width: 58px;
+  width: 102px;
 }
 
 .offer-table td {
@@ -437,6 +437,12 @@
   text-align: right;
 }
 
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .row-action {
   width: 36px;
   height: 36px;
@@ -455,6 +461,12 @@
   color: #245b4d;
   background: #edf5f1;
   border-color: #b9d0c5;
+}
+
+.highlight-action.active {
+  color: #765815;
+  background: #faf0d2;
+  border-color: #ddc575;
 }
 
 .row-action:disabled {
@@ -765,6 +777,37 @@
   color: #245b4d;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(20, 50, 42, 0.1);
+}
+
+.highlight-option {
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: #3f5048;
+  background: #f7f9f8;
+  border: 1px solid #d7dfdb;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.highlight-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0 9px 0 0;
+  accent-color: #397363;
+}
+
+.highlight-option span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.highlight-option svg {
+  color: #8a6918;
 }
 
 .money-input {

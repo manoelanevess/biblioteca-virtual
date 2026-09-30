@@ -1,6 +1,7 @@
 import { Router } from 'express'
 
 import {
+  alterarDestaqueLivro,
   alterarStatusOferta,
   criarAutor,
   criarCategoria,
@@ -16,12 +17,14 @@ import {
   exigirPerfis,
 } from '../middleware/autenticacao.js'
 import {
+  alterarDestaqueLivroSchema,
   alterarStatusOfertaSchema,
   criarAutorSchema,
   criarCategoriaSchema,
   criarEdicaoSchema,
   criarLivroSchema,
   criarOfertaSchema,
+  livroIdParametroSchema,
   ofertaIdParametroSchema,
 } from '../schemas/catalogo.js'
 
@@ -142,6 +145,9 @@ gerenciamentoCatalogoRouter.post('/categorias', async (request, response) => {
  *                 format: uri
  *               idioma:
  *                 type: string
+ *               destaque:
+ *                 type: boolean
+ *                 default: false
  *               autorIds:
  *                 type: array
  *                 items:
@@ -160,6 +166,49 @@ gerenciamentoCatalogoRouter.post('/livros', async (request, response) => {
   const livro = await criarLivro(criarLivroSchema.parse(request.body))
   response.status(201).json({ livro })
 })
+
+/**
+ * @openapi
+ * /api/gerenciamento/catalogo/livros/{livroId}/destaque:
+ *   patch:
+ *     tags: [Gerenciamento do catalogo]
+ *     summary: Define se um livro aparece nos destaques
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: livroId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [destaque]
+ *             properties:
+ *               destaque:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Destaque atualizado
+ *       404:
+ *         description: Livro nao encontrado
+ */
+gerenciamentoCatalogoRouter.patch(
+  '/livros/:livroId/destaque',
+  async (request, response) => {
+    const { livroId } = livroIdParametroSchema.parse(request.params)
+    const livro = await alterarDestaqueLivro(
+      livroId,
+      alterarDestaqueLivroSchema.parse(request.body),
+    )
+    response.status(200).json({ livro })
+  },
+)
 
 /**
  * @openapi

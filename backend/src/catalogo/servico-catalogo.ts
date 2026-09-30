@@ -31,6 +31,7 @@ function criarSelecaoLivro(formato?: FormatoLivro) {
     sinopse: true,
     urlCapa: true,
     idioma: true,
+    destaque: true,
     autores: {
       select: {
         autor: {
@@ -99,6 +100,7 @@ function mapearLivro(livro: LivroConsultado) {
     sinopse: livro.sinopse,
     urlCapa: livro.urlCapa,
     idioma: livro.idioma,
+    destaque: livro.destaque,
     autores: livro.autores.map(({ autor }) => autor),
     categorias: livro.categorias.map(({ categoria }) => categoria),
     avaliacao: {
@@ -128,6 +130,9 @@ export async function listarLivros(entrada: ListarLivrosEntrada) {
   const termoIsbn = entrada.termo?.replace(/[ -]/g, '')
   const where: Prisma.LivroWhereInput = {
     edicoes: { some: filtroEdicao },
+    ...(entrada.destaque === undefined
+      ? {}
+      : { destaque: entrada.destaque }),
     ...(entrada.categoriaId
       ? { categorias: { some: { categoriaId: entrada.categoriaId } } }
       : {}),

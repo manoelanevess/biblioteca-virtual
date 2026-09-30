@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
+  alterarDestaqueLivroSchema,
   alterarStatusOfertaSchema,
   criarAutorSchema,
   criarCategoriaSchema,
@@ -42,6 +43,14 @@ describe('consulta do catalogo', () => {
     const resultado = listarLivrosSchema.safeParse({ limite: '51' })
 
     assert.equal(resultado.success, false)
+  })
+
+  it('converte o filtro de destaque recebido pela URL', () => {
+    assert.equal(listarLivrosSchema.parse({ destaque: 'true' }).destaque, true)
+    assert.equal(
+      listarLivrosSchema.parse({ destaque: 'false' }).destaque,
+      false,
+    )
   })
 
   it('valida o identificador usado no detalhe do livro', () => {
@@ -118,6 +127,17 @@ describe('cadastro do catalogo', () => {
     )
     assert.equal(
       alterarStatusOfertaSchema.safeParse({ status: 'PUBLICADA' }).success,
+      false,
+    )
+  })
+
+  it('aceita apenas valores booleanos para o destaque', () => {
+    assert.equal(
+      alterarDestaqueLivroSchema.safeParse({ destaque: true }).success,
+      true,
+    )
+    assert.equal(
+      alterarDestaqueLivroSchema.safeParse({ destaque: 'true' }).success,
       false,
     )
   })

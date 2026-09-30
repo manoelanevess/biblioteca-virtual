@@ -79,8 +79,9 @@ const brazilianStates = [
 ] as const
 
 type CustomerCatalogProps = {
-  token: string
-  currentUserId: string
+  token: string | null
+  currentUserId: string | null
+  onAuthenticationRequired?: () => void
 }
 
 type CheckoutSelection = {
@@ -92,6 +93,7 @@ type CheckoutSelection = {
 export function CustomerCatalog({
   token,
   currentUserId,
+  onAuthenticationRequired,
 }: CustomerCatalogProps) {
   const [books, setBooks] = useState<PublicBook[]>([])
   const [categories, setCategories] = useState<PublicCategory[]>([])
@@ -102,6 +104,7 @@ export function CustomerCatalog({
   const [searchTerm, setSearchTerm] = useState('')
   const [format, setFormat] = useState<FormatFilter>('TODOS')
   const [categoryId, setCategoryId] = useState('')
+  const [featuredOnly, setFeaturedOnly] = useState(false)
   const [page, setPage] = useState(1)
   const [reloadVersion, setReloadVersion] = useState(0)
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
@@ -137,6 +140,7 @@ export function CustomerCatalog({
       termo: searchTerm || undefined,
       formato: format === 'TODOS' ? undefined : format,
       categoriaId: categoryId || undefined,
+      destaque: featuredOnly || undefined,
       pagina: page,
       limite: emptyPagination.limite,
     })
@@ -158,7 +162,7 @@ export function CustomerCatalog({
     return () => {
       active = false
     }
-  }, [categoryId, format, page, reloadVersion, searchTerm])
+  }, [categoryId, featuredOnly, format, page, reloadVersion, searchTerm])
 
   useEffect(() => {
     if (!selectedBookId) return
@@ -192,7 +196,9 @@ export function CustomerCatalog({
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [selectedBookId])
 
-  const hasFilters = Boolean(searchTerm || categoryId || format !== 'TODOS')
+  const hasFilters = Boolean(
+    searchTerm || categoryId || format !== 'TODOS' || featuredOnly,
+  )
   const resultLabel = useMemo(() => {
     if (loading) return 'Buscando livros'
     if (pagination.total === 1) return '1 livro encontrado'
@@ -214,6 +220,7 @@ export function CustomerCatalog({
     setSearchTerm('')
     setFormat('TODOS')
     setCategoryId('')
+    setFeaturedOnly(false)
     setPage(1)
   }
 
@@ -244,6 +251,11 @@ export function CustomerCatalog({
     edition: PublicEdition,
     offer: PublicOffer,
   ) {
+    if (!token) {
+      onAuthenticationRequired?.()
+      return
+    }
+
     setPurchaseResult(null)
     setCheckout({ book, edition, offer })
   }
@@ -327,6 +339,24 @@ export function CustomerCatalog({
               </option>
             ))}
           </select>
+
+          <button
+            className={`featured-filter${featuredOnly ? ' active' : ''}`}
+            type="button"
+            aria-pressed={featuredOnly}
+            onClick={() => {
+              prepareCatalogLoad()
+              setFeaturedOnly((current) => !current)
+              setPage(1)
+            }}
+          >
+            <Star
+              size={16}
+              fill={featuredOnly ? 'currentColor' : 'none'}
+              aria-hidden="true"
+            />
+            Destaques
+          </button>
 
           {hasFilters && (
             <button
@@ -459,12 +489,14 @@ export function CustomerCatalog({
                 onClose={closeDetail}
               />
             ) : checkout ? (
-              <PurchaseCheckout
-                token={token}
-                selection={checkout}
-                onBack={() => setCheckout(null)}
-                onComplete={finishPurchase}
-              />
+              token ? (
+                <PurchaseCheckout
+                  token={token}
+                  selection={checkout}
+                  onBack={() => setCheckout(null)}
+                  onComplete={finishPurchase}
+                />
+              ) : null
             ) : detailLoading ? (
               <div className="detail-loading" aria-label="Carregando detalhes">
                 <LoaderCircle size={26} aria-hidden="true" />
@@ -487,6 +519,7 @@ export function CustomerCatalog({
               <BookDetail
                 book={selectedBook}
                 currentUserId={currentUserId}
+                authenticated={Boolean(token)}
                 onBuy={(edition, offer) =>
                   startCheckout(selectedBook, edition, offer)
                 }
@@ -538,11 +571,17 @@ function BookCard({ book, onOpen }: { book: PublicBook; onOpen: () => void }) {
 
 type BookDetailProps = {
   book: PublicBook
-  currentUserId: string
+  currentUserId: string | null
+  authenticated: boolean
   onBuy: (edition: PublicEdition, offer: PublicOffer) => void
 }
 
-function BookDetail({ book, currentUserId, onBuy }: BookDetailProps) {
+function BookDetail({
+  book,
+  currentUserId,
+  authenticated,
+  onBuy,
+}: BookDetailProps) {
   return (
     <div className="book-detail-content">
       <div className="detail-summary">
@@ -568,6 +607,7 @@ function BookDetail({ book, currentUserId, onBuy }: BookDetailProps) {
             key={edition.id}
             edition={edition}
             currentUserId={currentUserId}
+            authenticated={authenticated}
             onBuy={(offer) => onBuy(edition, offer)}
           />
         ))}
@@ -578,13 +618,15 @@ function BookDetail({ book, currentUserId, onBuy }: BookDetailProps) {
 
 type EditionOffersProps = {
   edition: PublicEdition
-  currentUserId: string
+  currentUserId: string | null
+  authenticated: boolean
   onBuy: (offer: PublicOffer) => void
 }
 
 function EditionOffers({
   edition,
   currentUserId,
+  authenticated,
   onBuy,
 }: EditionOffersProps) {
   const metadata = [
@@ -624,7 +666,11 @@ function EditionOffers({
                   disabled={isOwnOffer || isUnavailable}
                   title={isOwnOffer ? 'Esta oferta pertence a você' : undefined}
                 >
-                  {isOwnOffer ? 'Sua oferta' : 'Comprar'}
+                  {isOwnOffer
+                    ? 'Sua oferta'
+                    : authenticated
+                      ? 'Comprar'
+                      : 'Entrar para comprar'}
                 </button>
               </div>
             </div>
@@ -924,6 +970,12 @@ function BookCover({ book, large = false }: { book: PublicBook; large?: boolean 
 
   return (
     <div className={`public-book-cover${large ? ' large' : ''}`}>
+      {book.destaque && (
+        <span className="featured-book-badge">
+          <Star size={13} fill="currentColor" aria-hidden="true" />
+          Destaque
+        </span>
+      )}
       {showImage ? (
         <img
           src={book.urlCapa ?? undefined}
@@ -931,7 +983,7 @@ function BookCover({ book, large = false }: { book: PublicBook; large?: boolean 
           onError={() => setImageFailed(true)}
         />
       ) : (
-        <span aria-hidden="true">
+        <span className="book-cover-placeholder" aria-hidden="true">
           <BookOpen size={large ? 34 : 27} />
           <strong>{getCoverMark(book.titulo)}</strong>
         </span>
