@@ -411,6 +411,7 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
     .join('')
     .toUpperCase()
   const canManageCatalog = session.user.role !== 'CLIENTE'
+  const canUsePersonalLibrary = session.user.role === 'CLIENTE'
 
   return (
     <main className="workspace-page">
@@ -426,15 +427,17 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
             <Compass size={18} aria-hidden="true" />
             <span>Explorar</span>
           </button>
-          <button
-            type="button"
-            className={view === 'BIBLIOTECA' ? 'active' : undefined}
-            aria-current={view === 'BIBLIOTECA' ? 'page' : undefined}
-            onClick={() => setView('BIBLIOTECA')}
-          >
-            <LibraryBig size={18} aria-hidden="true" />
-            <span>Minha biblioteca</span>
-          </button>
+          {canUsePersonalLibrary && (
+            <button
+              type="button"
+              className={view === 'BIBLIOTECA' ? 'active' : undefined}
+              aria-current={view === 'BIBLIOTECA' ? 'page' : undefined}
+              onClick={() => setView('BIBLIOTECA')}
+            >
+              <LibraryBig size={18} aria-hidden="true" />
+              <span>Minha biblioteca</span>
+            </button>
+          )}
           {canManageCatalog && (
             <button
               type="button"
@@ -478,7 +481,7 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
         <CatalogManager token={session.token} />
       )}
 
-      {view === 'BIBLIOTECA' && (
+      {view === 'BIBLIOTECA' && canUsePersonalLibrary && (
         <section className="workspace-content">
           <PersonalLibrary token={session.token} firstName={firstName} />
         </section>
