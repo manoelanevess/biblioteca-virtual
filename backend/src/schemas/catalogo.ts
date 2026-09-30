@@ -39,6 +39,7 @@ export const criarLivroSchema = z
     sinopse: z.string().trim().max(5000).optional(),
     urlCapa: z.string().url().optional(),
     idioma: z.string().trim().min(2).max(10).default('pt-BR'),
+    destaque: z.boolean().default(false),
     autorIds: idsUnicosSchema.max(20),
     categoriaIds: idsUnicosSchema.max(20),
   })
@@ -94,6 +95,10 @@ export const listarLivrosSchema = z
     termo: z.string().trim().min(2).max(200).optional(),
     formato: z.enum(['FISICO', 'EBOOK']).optional(),
     categoriaId: idSchema.optional(),
+    destaque: z
+      .enum(['true', 'false'])
+      .transform((valor) => valor === 'true')
+      .optional(),
     pagina: z.coerce.number().int().min(1).default(1),
     limite: z.coerce.number().int().min(1).max(50).default(12),
   })
@@ -105,6 +110,12 @@ export const livroIdParametroSchema = z
   })
   .strict()
 
+export const alterarDestaqueLivroSchema = z
+  .object({
+    destaque: z.boolean(),
+  })
+  .strict()
+
 export type ListarLivrosEntrada = z.infer<typeof listarLivrosSchema>
 export type CriarAutorEntrada = z.infer<typeof criarAutorSchema>
 export type CriarCategoriaEntrada = z.infer<typeof criarCategoriaSchema>
@@ -113,5 +124,8 @@ export type CriarEdicaoEntrada = z.infer<typeof criarEdicaoSchema>
 export type CriarOfertaEntrada = z.infer<typeof criarOfertaSchema>
 export type AlterarStatusOfertaEntrada = z.infer<
   typeof alterarStatusOfertaSchema
+>
+export type AlterarDestaqueLivroEntrada = z.infer<
+  typeof alterarDestaqueLivroSchema
 >
 

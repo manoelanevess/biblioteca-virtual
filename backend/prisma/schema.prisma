@@ -89,6 +89,7 @@ model Livro {
   sinopse      String?          @db.Text
   urlCapa      String?
   idioma       String           @default("pt-BR")
+  destaque     Boolean          @default(false)
   autores      LivroAutor[]
   categorias   LivroCategoria[]
   edicoes      EdicaoLivro[]
@@ -98,6 +99,7 @@ model Livro {
   atualizadoEm DateTime         @updatedAt
 
   @@index([titulo])
+  @@index([destaque])
 }
 
 model LivroAutor {

@@ -34,6 +34,10 @@ export const catalogoRouter = Router()
  *           type: string
  *           format: uuid
  *       - in: query
+ *         name: destaque
+ *         schema:
+ *           type: boolean
+ *       - in: query
  *         name: pagina
  *         schema:
  *           type: integer
