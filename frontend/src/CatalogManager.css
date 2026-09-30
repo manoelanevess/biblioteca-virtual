@@ -180,6 +180,105 @@
   font-size: 1.35rem;
 }
 
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.performance-chart {
+  min-width: 0;
+  border: 1px solid #dbe2de;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.performance-chart > header {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e2e8e5;
+}
+
+.performance-chart h2 {
+  margin: 0;
+  color: #293a33;
+  font-size: 0.9rem;
+}
+
+.chart-bars {
+  display: grid;
+  gap: 13px;
+  padding: 17px 18px 19px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.8fr) minmax(90px, 1fr) 28px;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-label {
+  min-width: 0;
+}
+
+.chart-label span,
+.chart-label small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-label span {
+  color: #34483f;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.chart-label small {
+  margin-top: 2px;
+  color: #7b8781;
+  font-size: 0.66rem;
+}
+
+.chart-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #e8eeea;
+}
+
+.chart-track span {
+  display: block;
+  min-width: 4px;
+  height: 100%;
+  border-radius: inherit;
+  background: #44765f;
+}
+
+.performance-chart:nth-child(2) .chart-track span {
+  background: #c56a4d;
+}
+
+.chart-row > strong {
+  color: #34483f;
+  font-size: 0.76rem;
+  text-align: right;
+}
+
+.chart-empty {
+  min-height: 145px;
+  display: grid;
+  margin: 0;
+  padding: 24px;
+  color: #77837d;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+  place-items: center;
+}
+
 .offer-section {
   margin-top: 30px;
   background: #ffffff;
@@ -979,6 +1078,10 @@
     border-top: 1px solid #e2e8e5;
   }
 
+  .performance-grid {
+    grid-template-columns: 1fr;
+  }
+
   .offer-toolbar {
     align-items: flex-start;
     flex-direction: column;
@@ -1028,6 +1131,10 @@
   .metric-grid {
     grid-template-columns: 1fr 1fr;
     margin-top: 26px;
+  }
+
+  .chart-row {
+    grid-template-columns: minmax(95px, 0.9fr) minmax(70px, 1fr) 24px;
   }
 
   .metric-item {

@@ -84,6 +84,12 @@ export const ofertaIdParametroSchema = z
   })
   .strict()
 
+export const registrarVisualizacaoSchema = z
+  .object({
+    sessaoId: z.string().uuid().optional(),
+  })
+  .strict()
+
 export const alterarStatusOfertaSchema = z
   .object({
     status: z.enum(['RASCUNHO', 'ATIVA', 'INATIVA']),
@@ -120,6 +126,9 @@ export const alterarDestaqueLivroSchema = z
   .strict()
 
 export type ListarLivrosEntrada = z.infer<typeof listarLivrosSchema>
+export type RegistrarVisualizacaoEntrada = z.infer<
+  typeof registrarVisualizacaoSchema
+>
 export type CriarAutorEntrada = z.infer<typeof criarAutorSchema>
 export type CriarCategoriaEntrada = z.infer<typeof criarCategoriaSchema>
 export type CriarLivroEntrada = z.infer<typeof criarLivroSchema>

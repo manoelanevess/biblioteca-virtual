@@ -5,7 +5,10 @@ import {
   FormatoLivro,
   StatusOferta,
 } from '../generated/prisma/enums.js'
-import type { ListarLivrosEntrada } from '../schemas/catalogo.js'
+import type {
+  ListarLivrosEntrada,
+  RegistrarVisualizacaoEntrada,
+} from '../schemas/catalogo.js'
 
 const ofertaDisponivelWhere = {
   status: StatusOferta.ATIVA,
@@ -279,5 +282,37 @@ export async function listarCategorias() {
       descricao: true,
     },
     orderBy: { nome: 'asc' },
+  })
+}
+
+export async function registrarVisualizacaoOferta(
+  ofertaId: string,
+  entrada: RegistrarVisualizacaoEntrada,
+) {
+  const oferta = await prisma.ofertaLivro.findFirst({
+    where: { id: ofertaId, status: StatusOferta.ATIVA },
+    select: { id: true },
+  })
+
+  if (!oferta) {
+    throw new ErroHttp(404, 'OFERTA_NAO_ENCONTRADA', 'Oferta nao encontrada')
+  }
+
+  if (entrada.sessaoId) {
+    const visualizacaoExistente = await prisma.visualizacaoOferta.findFirst({
+      where: { ofertaId, sessaoId: entrada.sessaoId },
+      select: { id: true },
+    })
+
+    if (visualizacaoExistente) {
+      return
+    }
+  }
+
+  await prisma.visualizacaoOferta.create({
+    data: {
+      ofertaId,
+      sessaoId: entrada.sessaoId,
+    },
   })
 }

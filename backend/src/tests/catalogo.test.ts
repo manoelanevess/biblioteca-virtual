@@ -11,6 +11,7 @@ import {
   criarOfertaSchema,
   listarLivrosSchema,
   livroIdParametroSchema,
+  registrarVisualizacaoSchema,
 } from '../schemas/catalogo.js'
 
 describe('consulta do catalogo', () => {
@@ -74,6 +75,14 @@ describe('consulta do catalogo', () => {
 
     assert.equal(valido.success, true)
     assert.equal(invalido.success, false)
+  })
+
+  it('aceita uma sessao valida ao registrar visualizacao', () => {
+    const resultado = registrarVisualizacaoSchema.safeParse({
+      sessaoId: '04b26139-fe63-40c1-bb98-0f01ad7a4d22',
+    })
+
+    assert.equal(resultado.success, true)
   })
 })
 

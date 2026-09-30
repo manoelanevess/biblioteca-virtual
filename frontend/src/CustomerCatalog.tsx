@@ -26,6 +26,7 @@ import {
   getPublicBook,
   getPublicBooks,
   getPublicCategories,
+  registerOfferView,
   type BookFormat,
   type PublicBook,
   type PublicCategory,
@@ -181,7 +182,12 @@ export function CustomerCatalog({
 
     getPublicBook(selectedBookId)
       .then((book) => {
-        if (active) setSelectedBook(book)
+        if (!active) return
+        setSelectedBook(book)
+        const offerIds = book.edicoes.flatMap((edition) =>
+          edition.ofertas.map((offer) => offer.id),
+        )
+        void Promise.allSettled(offerIds.map(registerOfferView))
       })
       .catch((loadError: unknown) => {
         if (active) setDetailError(getErrorMessage(loadError))

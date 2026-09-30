@@ -4,10 +4,13 @@ import {
   listarCategorias,
   listarLivros,
   obterLivro,
+  registrarVisualizacaoOferta,
 } from '../catalogo/servico-catalogo.js'
 import {
   listarLivrosSchema,
   livroIdParametroSchema,
+  ofertaIdParametroSchema,
+  registrarVisualizacaoSchema,
 } from '../schemas/catalogo.js'
 
 export const catalogoRouter = Router()
@@ -89,6 +92,34 @@ catalogoRouter.get('/livros/:livroId', async (request, response) => {
 
   response.status(200).json({ livro })
 })
+
+/**
+ * @openapi
+ * /api/catalogo/ofertas/{ofertaId}/visualizacoes:
+ *   post:
+ *     tags: [Catalogo]
+ *     summary: Registra uma visualizacao de oferta no catalogo
+ *     parameters:
+ *       - in: path
+ *         name: ofertaId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       204:
+ *         description: Visualizacao registrada
+ */
+catalogoRouter.post(
+  '/ofertas/:ofertaId/visualizacoes',
+  async (request, response) => {
+    const { ofertaId } = ofertaIdParametroSchema.parse(request.params)
+    const entrada = registrarVisualizacaoSchema.parse(request.body)
+    await registrarVisualizacaoOferta(ofertaId, entrada)
+
+    response.status(204).send()
+  },
+)
 
 /**
  * @openapi

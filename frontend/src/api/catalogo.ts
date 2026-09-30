@@ -190,6 +190,22 @@ export async function getPublicCategories() {
   return response.categorias
 }
 
+export async function registerOfferView(offerId: string) {
+  const storageKey = 'biblioteca-virtual-visitor'
+  let sessionId = localStorage.getItem(storageKey)
+
+  if (!sessionId) {
+    sessionId = crypto.randomUUID()
+    localStorage.setItem(storageKey, sessionId)
+  }
+
+  await fetch(`/api/catalogo/ofertas/${offerId}/visualizacoes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessaoId: sessionId }),
+  })
+}
+
 export async function getCatalogReferences(token: string) {
   return catalogRequest<CatalogReferences>('/referencias', token)
 }
