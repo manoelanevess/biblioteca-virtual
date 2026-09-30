@@ -78,6 +78,7 @@ export type PublicBook = {
   urlCapa: string | null
   idioma: string
   destaque: boolean
+  enriquecidoPorIa: boolean
   autores: CatalogAuthor[]
   categorias: CatalogCategory[]
   avaliacao: {
@@ -117,6 +118,7 @@ export type NewBookInput = {
   urlCapa?: string
   idioma: string
   destaque?: boolean
+  enriquecidoPorIa?: boolean
   autorIds: string[]
   categoriaIds: string[]
 }

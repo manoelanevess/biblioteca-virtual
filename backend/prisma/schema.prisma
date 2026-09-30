@@ -84,19 +84,20 @@ model Categoria {
 }
 
 model Livro {
-  id           String           @id @default(uuid()) @db.Uuid
-  titulo       String
-  sinopse      String?          @db.Text
-  urlCapa      String?
-  idioma       String           @default("pt-BR")
-  destaque     Boolean          @default(false)
-  autores      LivroAutor[]
-  categorias   LivroCategoria[]
-  edicoes      EdicaoLivro[]
-  avaliacoes   Avaliacao[]
-  favoritos    Favorito[]
-  criadoEm     DateTime         @default(now())
-  atualizadoEm DateTime         @updatedAt
+  id               String           @id @default(uuid()) @db.Uuid
+  titulo           String
+  sinopse          String?          @db.Text
+  urlCapa          String?
+  idioma           String           @default("pt-BR")
+  destaque         Boolean          @default(false)
+  enriquecidoPorIa Boolean          @default(false)
+  autores          LivroAutor[]
+  categorias       LivroCategoria[]
+  edicoes          EdicaoLivro[]
+  avaliacoes       Avaliacao[]
+  favoritos        Favorito[]
+  criadoEm         DateTime         @default(now())
+  atualizadoEm     DateTime         @updatedAt
 
   @@index([titulo])
   @@index([destaque])

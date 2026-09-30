@@ -70,6 +70,7 @@ export async function register(input: {
   name: string
   email: string
   password: string
+  role?: 'CLIENTE' | 'VENDEDOR'
 }) {
   const response = await request<AuthenticationResponse>(
     '/api/autenticacao/registro',
@@ -83,7 +84,11 @@ export async function register(input: {
     },
   )
 
-  return mapSession(response)
+  const session = mapSession(response)
+
+  return input.role === 'VENDEDOR'
+    ? enableSellerProfile(session.token)
+    : session
 }
 
 export async function getCurrentUser(token: string) {

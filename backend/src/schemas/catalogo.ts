@@ -40,6 +40,7 @@ export const criarLivroSchema = z
     urlCapa: z.string().url().optional(),
     idioma: z.string().trim().min(2).max(10).default('pt-BR'),
     destaque: z.boolean().default(false),
+    enriquecidoPorIa: z.boolean().default(false),
     autorIds: idsUnicosSchema.max(20),
     categoriaIds: idsUnicosSchema.max(20),
   })

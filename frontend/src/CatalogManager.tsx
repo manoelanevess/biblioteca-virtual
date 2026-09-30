@@ -604,6 +604,7 @@ function RegistrationPanel({
     string | null
   >(null)
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiApplied, setAiApplied] = useState(false)
   const [aiNotice, setAiNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [referenceSubmitting, setReferenceSubmitting] = useState(false)
@@ -647,6 +648,7 @@ function RegistrationPanel({
       setSelectedCategoryId(matchingCategory?.id ?? suggestedCategoryId)
       setSynopsis(suggestion.sinopse)
       setLanguage(suggestion.idioma)
+      setAiApplied(true)
       setAiNotice('Sugestões preenchidas. Revise os dados antes de continuar.')
     } catch (suggestionError) {
       setError(getErrorMessage(suggestionError))
@@ -708,6 +710,7 @@ function RegistrationPanel({
           urlCapa: getOptionalValue(formData, 'coverUrl'),
           idioma: getRequiredValue(formData, 'language'),
           destaque: formData.get('highlight') === 'on',
+          enriquecidoPorIa: aiApplied,
           autorIds: [authorId],
           categoriaIds: [categoryId],
         })

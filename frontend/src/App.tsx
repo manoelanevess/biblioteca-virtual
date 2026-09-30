@@ -35,6 +35,7 @@ import { ReviewManager } from './ReviewManager'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
+type RegistrationRole = 'CLIENTE' | 'VENDEDOR'
 type WorkspaceView =
   | 'CATALOGO'
   | 'BIBLIOTECA'
@@ -46,6 +47,8 @@ function App() {
   const [mode, setMode] = useState<AuthMode>('login')
   const [showAuthentication, setShowAuthentication] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [registrationRole, setRegistrationRole] =
+    useState<RegistrationRole>('CLIENTE')
   const [initialSession] = useState(getStoredSession)
   const [session, setSession] = useState<Session | null>(initialSession)
   const [restoringSession, setRestoringSession] = useState(
@@ -96,6 +99,7 @@ function App() {
             name: String(formData.get('name') ?? ''),
             email,
             password,
+            role: registrationRole,
           })
 
       saveSession(nextSession)
@@ -231,22 +235,50 @@ function App() {
             aria-busy={submitting}
           >
             {!isLogin && (
-              <label className="field-group">
-                <span>Nome</span>
-                <span className="field-control">
-                  <User size={18} aria-hidden="true" />
-                  <input
-                    name="name"
-                    type="text"
-                    autoComplete="name"
-                    placeholder="Seu nome completo"
-                    minLength={2}
-                    maxLength={120}
-                    disabled={submitting}
-                    required
-                  />
-                </span>
-              </label>
+              <>
+                <fieldset className="registration-role">
+                  <legend>Tipo de conta</legend>
+                  <div>
+                    <button
+                      type="button"
+                      className={registrationRole === 'CLIENTE' ? 'active' : undefined}
+                      aria-pressed={registrationRole === 'CLIENTE'}
+                      onClick={() => setRegistrationRole('CLIENTE')}
+                      disabled={submitting}
+                    >
+                      <User size={17} aria-hidden="true" />
+                      Cliente
+                    </button>
+                    <button
+                      type="button"
+                      className={registrationRole === 'VENDEDOR' ? 'active' : undefined}
+                      aria-pressed={registrationRole === 'VENDEDOR'}
+                      onClick={() => setRegistrationRole('VENDEDOR')}
+                      disabled={submitting}
+                    >
+                      <Store size={17} aria-hidden="true" />
+                      Vendedor
+                    </button>
+                  </div>
+                </fieldset>
+
+                <label className="field-group">
+                  <span>Nome</span>
+                  <span className="field-control">
+                    <User size={18} aria-hidden="true" />
+                    <input
+                      name="name"
+                      type="text"
+                      autoComplete="name"
+                      placeholder="Seu nome completo"
+                      minLength={2}
+                      maxLength={120}
+                      disabled={submitting}
+                      required
+                    />
+                  </span>
+                </label>
+              </>
             )}
 
             <label className="field-group">

@@ -250,6 +250,50 @@
   gap: 20px;
 }
 
+.registration-role {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.registration-role legend {
+  margin-bottom: 8px;
+  color: #25352f;
+  font-size: 0.825rem;
+  font-weight: 700;
+}
+
+.registration-role > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.registration-role button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  border: 1px solid #ccd5d0;
+  border-radius: 6px;
+  color: #607069;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.registration-role button.active {
+  border-color: #397363;
+  color: #224f3d;
+  background: #eaf2ee;
+  box-shadow: 0 0 0 2px rgb(57 115 99 / 10%);
+}
+
 .field-group {
   display: flex;
   flex-direction: column;

@@ -17,6 +17,7 @@ import {
   PackageOpen,
   Search,
   ShoppingBag,
+  Sparkles,
   Star,
   TabletSmartphone,
   X,
@@ -639,6 +640,12 @@ function BookDetail({
           <p className="detail-synopsis">
             {book.sinopse ?? 'Sinopse ainda não informada.'}
           </p>
+          {book.enriquecidoPorIa && (
+            <span className="ai-enriched-note">
+              <Sparkles size={14} aria-hidden="true" />
+              Dados complementados por IA
+            </span>
+          )}
         </div>
       </div>
 

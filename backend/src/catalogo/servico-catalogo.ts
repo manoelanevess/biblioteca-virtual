@@ -35,6 +35,7 @@ function criarSelecaoLivro(formato?: FormatoLivro) {
     urlCapa: true,
     idioma: true,
     destaque: true,
+    enriquecidoPorIa: true,
     criadoEm: true,
     autores: {
       select: {
@@ -147,6 +148,7 @@ function mapearLivro(livro: LivroConsultado) {
     urlCapa: livro.urlCapa,
     idioma: livro.idioma,
     destaque: livro.destaque,
+    enriquecidoPorIa: livro.enriquecidoPorIa,
     autores: livro.autores.map(({ autor }) => autor),
     categorias: livro.categorias.map(({ categoria }) => categoria),
     avaliacao: {

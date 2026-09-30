@@ -23,6 +23,7 @@ const selecaoLivroGerenciado = {
   urlCapa: true,
   idioma: true,
   destaque: true,
+  enriquecidoPorIa: true,
   autores: {
     select: { autor: { select: { id: true, nome: true } } },
   },
@@ -116,6 +117,7 @@ function criarLivroNoBanco(entrada: CriarLivroEntrada) {
       urlCapa: entrada.urlCapa,
       idioma: entrada.idioma,
       destaque: entrada.destaque,
+      enriquecidoPorIa: entrada.enriquecidoPorIa,
       autores: {
         create: entrada.autorIds.map((autorId) => ({
           autor: { connect: { id: autorId } },
