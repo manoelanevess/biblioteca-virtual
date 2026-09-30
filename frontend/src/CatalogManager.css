@@ -676,6 +676,72 @@
   line-height: 1.45;
 }
 
+.ai-assistant {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 10px 8px 13px;
+  background: #edf4f1;
+  border: 1px solid #c8d9d2;
+  border-radius: 6px;
+}
+
+.ai-assistant-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #34564b;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.ai-assistant-label svg {
+  color: #397363;
+}
+
+.ai-assistant button {
+  min-height: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  color: #ffffff;
+  background: #397363;
+  border: 0;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ai-assistant button:hover:not(:disabled) {
+  background: #2f6456;
+}
+
+.ai-assistant button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.ai-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 0;
+  color: #32604f;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.ai-notice svg {
+  flex: 0 0 auto;
+}
+
 .catalog-field {
   min-width: 0;
   display: flex;
@@ -925,6 +991,17 @@
   .catalog-search {
     width: auto;
     flex: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .ai-assistant {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ai-assistant button {
+    width: 100%;
   }
 }
 

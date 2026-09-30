@@ -17,6 +17,7 @@ import {
   Plus,
   Search,
   ShoppingBag,
+  Sparkles,
   Star,
   X,
 } from 'lucide-react'
@@ -29,6 +30,7 @@ import {
   createCategory,
   createEdition,
   createOffer,
+  getBookSuggestion,
   getCatalogReferences,
   getManagedOffers,
   type BookFormat,
@@ -46,6 +48,9 @@ type CatalogManagerProps = {
 type StatusFilter = 'TODAS' | OfferStatus
 type ReferenceKind = 'autor' | 'categoria'
 type RegistrationStep = 1 | 2 | 3
+
+const suggestedAuthorId = 'SUGESTAO_IA_AUTOR'
+const suggestedCategoryId = 'SUGESTAO_IA_CATEGORIA'
 
 export function CatalogManager({ token }: CatalogManagerProps) {
   const [references, setReferences] = useState<CatalogReferences | null>(null)
@@ -505,15 +510,69 @@ function RegistrationPanel({
   const [edition, setEdition] = useState<CatalogEdition | null>(null)
   const [referenceKind, setReferenceKind] = useState<ReferenceKind | null>(null)
   const [referenceName, setReferenceName] = useState('')
-  const [selectedAuthorId, setSelectedAuthorId] = useState(
-    references.autores[0]?.id ?? '',
+  const [title, setTitle] = useState('')
+  const [synopsis, setSynopsis] = useState('')
+  const [language, setLanguage] = useState('pt-BR')
+  const [isbn, setIsbn] = useState('')
+  const [selectedAuthorId, setSelectedAuthorId] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const [suggestedAuthorName, setSuggestedAuthorName] = useState<string | null>(
+    null,
   )
-  const [selectedCategoryId, setSelectedCategoryId] = useState(
-    references.categorias[0]?.id ?? '',
-  )
+  const [suggestedCategoryName, setSuggestedCategoryName] = useState<
+    string | null
+  >(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiNotice, setAiNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [referenceSubmitting, setReferenceSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  async function handleAiSuggestion() {
+    if (title.trim().length < 2) {
+      setError('Informe o título do livro antes de consultar a IA.')
+      return
+    }
+
+    const selectedAuthor = references.autores.find(
+      (author) => author.id === selectedAuthorId,
+    )
+    setAiLoading(true)
+    setAiNotice(null)
+    setError(null)
+
+    try {
+      const suggestion = await getBookSuggestion(token, {
+        titulo: title,
+        autor: selectedAuthor?.nome,
+        isbn: isbn.trim() || undefined,
+      })
+      const matchingAuthor = findReferenceByName(
+        references.autores,
+        suggestion.autorSugerido,
+      )
+      const matchingCategory = findReferenceByName(
+        references.categorias,
+        suggestion.categoriaSugerida,
+      )
+
+      setSuggestedAuthorName(
+        matchingAuthor ? null : suggestion.autorSugerido,
+      )
+      setSuggestedCategoryName(
+        matchingCategory ? null : suggestion.categoriaSugerida,
+      )
+      setSelectedAuthorId(matchingAuthor?.id ?? suggestedAuthorId)
+      setSelectedCategoryId(matchingCategory?.id ?? suggestedCategoryId)
+      setSynopsis(suggestion.sinopse)
+      setLanguage(suggestion.idioma)
+      setAiNotice('Sugestões preenchidas. Revise os dados antes de continuar.')
+    } catch (suggestionError) {
+      setError(getErrorMessage(suggestionError))
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -523,17 +582,55 @@ function RegistrationPanel({
 
     try {
       if (step === 1) {
-        const title = getRequiredValue(formData, 'title')
+        let authorId = selectedAuthorId
+        let categoryId = selectedCategoryId
+        let nextReferences = references
+
+        if (authorId === suggestedAuthorId && suggestedAuthorName) {
+          const author = await createAuthor(token, suggestedAuthorName)
+          authorId = author.id
+          nextReferences = {
+            ...nextReferences,
+            autores: [...nextReferences.autores, author].sort((a, b) =>
+              a.nome.localeCompare(b.nome, 'pt-BR'),
+            ),
+          }
+        }
+
+        if (categoryId === suggestedCategoryId && suggestedCategoryName) {
+          const category = await createCategory(token, suggestedCategoryName)
+          categoryId = category.id
+          nextReferences = {
+            ...nextReferences,
+            categorias: [...nextReferences.categorias, category].sort((a, b) =>
+              a.nome.localeCompare(b.nome, 'pt-BR'),
+            ),
+          }
+        }
+
+        if (!authorId || !categoryId) {
+          throw new ApiError(
+            'Selecione um autor e uma categoria.',
+            'REFERENCIAS_OBRIGATORIAS',
+            400,
+          )
+        }
+
+        if (nextReferences !== references) {
+          onReferencesChange(nextReferences)
+        }
+
+        const normalizedTitle = getRequiredValue(formData, 'title')
         const createdBook = await createBook(token, {
-          titulo: title,
+          titulo: normalizedTitle,
           sinopse: getOptionalValue(formData, 'synopsis'),
           urlCapa: getOptionalValue(formData, 'coverUrl'),
           idioma: getRequiredValue(formData, 'language'),
           destaque: formData.get('highlight') === 'on',
-          autorIds: [getRequiredValue(formData, 'authorId')],
-          categoriaIds: [getRequiredValue(formData, 'categoryId')],
+          autorIds: [authorId],
+          categoriaIds: [categoryId],
         })
-        setBook({ id: createdBook.id, title })
+        setBook({ id: createdBook.id, title: normalizedTitle })
         setStep(2)
         return
       }
@@ -596,6 +693,7 @@ function RegistrationPanel({
           ),
         })
         setSelectedAuthorId(author.id)
+        setSuggestedAuthorName(null)
       } else {
         const category = await createCategory(token, referenceName)
         onReferencesChange({
@@ -605,6 +703,7 @@ function RegistrationPanel({
           ),
         })
         setSelectedCategoryId(category.id)
+        setSuggestedCategoryName(null)
       }
       setReferenceKind(null)
       setReferenceName('')
@@ -631,7 +730,7 @@ function RegistrationPanel({
           <button
             type="button"
             onClick={onClose}
-            disabled={submitting}
+            disabled={submitting || aiLoading}
             aria-label="Fechar cadastro"
             title="Fechar cadastro"
           >
@@ -659,10 +758,56 @@ function RegistrationPanel({
                 description="Informações compartilhadas entre as edições."
               />
               <Field label="Título">
-                <input name="title" maxLength={200} required autoFocus />
+                <input
+                  name="title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  maxLength={200}
+                  required
+                  autoFocus
+                />
               </Field>
+              <Field label="ISBN" optional>
+                <input
+                  name="isbnReference"
+                  value={isbn}
+                  onChange={(event) => setIsbn(event.target.value)}
+                  inputMode="numeric"
+                  maxLength={17}
+                />
+              </Field>
+              <div className="ai-assistant">
+                <span className="ai-assistant-label">
+                  <Sparkles size={18} aria-hidden="true" />
+                  Completar informações
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAiSuggestion}
+                  disabled={aiLoading || title.trim().length < 2}
+                >
+                  {aiLoading ? (
+                    <LoaderCircle className="button-loader" size={17} />
+                  ) : (
+                    <Sparkles size={17} aria-hidden="true" />
+                  )}
+                  {aiLoading ? 'Consultando' : 'Preencher com IA'}
+                </button>
+              </div>
+              {aiNotice && (
+                <p className="ai-notice" role="status">
+                  <Check size={16} aria-hidden="true" />
+                  {aiNotice}
+                </p>
+              )}
               <Field label="Sinopse">
-                <textarea name="synopsis" rows={4} maxLength={5000} />
+                <textarea
+                  name="synopsis"
+                  value={synopsis}
+                  onChange={(event) => setSynopsis(event.target.value)}
+                  rows={4}
+                  maxLength={5000}
+                />
               </Field>
               <div className="form-grid">
                 <Field label="Autor">
@@ -672,8 +817,11 @@ function RegistrationPanel({
                     onChange={(event) => setSelectedAuthorId(event.target.value)}
                     required
                   >
-                    {!references.autores.length && (
-                      <option value="">Cadastre um autor</option>
+                    <option value="">Selecione um autor</option>
+                    {suggestedAuthorName && (
+                      <option value={suggestedAuthorId}>
+                        {suggestedAuthorName} (novo)
+                      </option>
                     )}
                     {references.autores.map((author) => (
                       <option key={author.id} value={author.id}>
@@ -697,8 +845,11 @@ function RegistrationPanel({
                     }
                     required
                   >
-                    {!references.categorias.length && (
-                      <option value="">Cadastre uma categoria</option>
+                    <option value="">Selecione uma categoria</option>
+                    {suggestedCategoryName && (
+                      <option value={suggestedCategoryId}>
+                        {suggestedCategoryName} (nova)
+                      </option>
                     )}
                     {references.categorias.map((category) => (
                       <option key={category.id} value={category.id}>
@@ -714,7 +865,13 @@ function RegistrationPanel({
               </div>
               <div className="form-grid equal-columns">
                 <Field label="Idioma">
-                  <input name="language" defaultValue="pt-BR" maxLength={10} required />
+                  <input
+                    name="language"
+                    value={language}
+                    onChange={(event) => setLanguage(event.target.value)}
+                    maxLength={10}
+                    required
+                  />
                 </Field>
                 <Field label="URL da capa" optional>
                   <input name="coverUrl" type="url" placeholder="https://" />
@@ -753,7 +910,13 @@ function RegistrationPanel({
                 </button>
               </div>
               <Field label="ISBN" optional>
-                <input name="isbn" inputMode="numeric" maxLength={17} />
+                <input
+                  name="isbn"
+                  value={isbn}
+                  onChange={(event) => setIsbn(event.target.value)}
+                  inputMode="numeric"
+                  maxLength={17}
+                />
               </Field>
               <Field label="Editora" optional>
                 <input name="publisher" maxLength={160} />
@@ -819,10 +982,19 @@ function RegistrationPanel({
           )}
 
           <footer className="registration-footer">
-            <button type="button" className="secondary-action" onClick={onClose}>
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={onClose}
+              disabled={submitting || aiLoading}
+            >
               Fechar
             </button>
-            <button className="primary-action" type="submit" disabled={submitting}>
+            <button
+              className="primary-action"
+              type="submit"
+              disabled={submitting || aiLoading}
+            >
               {submitting ? (
                 <LoaderCircle className="button-loader" size={18} />
               ) : step === 3 ? (
@@ -941,6 +1113,24 @@ function getOptionalValue(formData: FormData, name: string) {
 function getOptionalNumber(formData: FormData, name: string) {
   const value = getOptionalValue(formData, name)
   return value ? Number(value) : undefined
+}
+
+function findReferenceByName<T extends { id: string; nome: string }>(
+  references: T[],
+  name: string,
+) {
+  const normalizedName = normalizeReferenceName(name)
+  return references.find(
+    (reference) => normalizeReferenceName(reference.nome) === normalizedName,
+  )
+}
+
+function normalizeReferenceName(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLocaleLowerCase('pt-BR')
 }
 
 function getErrorMessage(error: unknown) {
