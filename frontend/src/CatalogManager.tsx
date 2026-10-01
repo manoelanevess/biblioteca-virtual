@@ -48,9 +48,22 @@ type CatalogManagerProps = {
 type StatusFilter = 'TODAS' | OfferStatus
 type ReferenceKind = 'autor' | 'categoria'
 type RegistrationStep = 1 | 2 | 3
+type FormatSelection = BookFormat | 'AMBOS'
+type EditionDraft = {
+  isbn: string
+  publisher: string
+  publicationYear: string
+  pageCount: string
+}
 
 const suggestedAuthorId = 'SUGESTAO_IA_AUTOR'
 const suggestedCategoryId = 'SUGESTAO_IA_CATEGORIA'
+const emptyEditionDraft: EditionDraft = {
+  isbn: '',
+  publisher: '',
+  publicationYear: '',
+  pageCount: '',
+}
 
 export function CatalogManager({ token }: CatalogManagerProps) {
   const [references, setReferences] = useState<CatalogReferences | null>(null)
@@ -115,7 +128,7 @@ export function CatalogManager({ token }: CatalogManagerProps) {
 
   async function handleRegistrationFinished() {
     setEditorOpen(false)
-    setSuccess('Livro e oferta cadastrados como rascunho.')
+    setSuccess('Cadastro concluído. As ofertas foram salvas como rascunho.')
     setLoading(true)
 
     try {
@@ -586,9 +599,16 @@ function RegistrationPanel({
   onFinished,
 }: RegistrationPanelProps) {
   const [step, setStep] = useState<RegistrationStep>(1)
-  const [format, setFormat] = useState<BookFormat>('FISICO')
+  const [formatSelection, setFormatSelection] =
+    useState<FormatSelection>('FISICO')
   const [book, setBook] = useState<{ id: string; title: string } | null>(null)
-  const [edition, setEdition] = useState<CatalogEdition | null>(null)
+  const [editions, setEditions] = useState<CatalogEdition[]>([])
+  const [editionDrafts, setEditionDrafts] = useState<
+    Record<BookFormat, EditionDraft>
+  >({
+    FISICO: { ...emptyEditionDraft },
+    EBOOK: { ...emptyEditionDraft },
+  })
   const [referenceKind, setReferenceKind] = useState<ReferenceKind | null>(null)
   const [referenceName, setReferenceName] = useState('')
   const [title, setTitle] = useState('')
@@ -609,6 +629,18 @@ function RegistrationPanel({
   const [submitting, setSubmitting] = useState(false)
   const [referenceSubmitting, setReferenceSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const selectedFormats = getSelectedFormats(formatSelection)
+
+  function updateEditionDraft(
+    format: BookFormat,
+    field: keyof EditionDraft,
+    value: string,
+  ) {
+    setEditionDrafts((current) => ({
+      ...current,
+      [format]: { ...current[format], [field]: value },
+    }))
+  }
 
   async function handleAiSuggestion() {
     if (title.trim().length < 2) {
@@ -628,6 +660,7 @@ function RegistrationPanel({
         titulo: title,
         autor: selectedAuthor?.nome,
         isbn: isbn.trim() || undefined,
+        formatos: selectedFormats,
       })
       const matchingAuthor = findReferenceByName(
         references.autores,
@@ -648,8 +681,41 @@ function RegistrationPanel({
       setSelectedCategoryId(matchingCategory?.id ?? suggestedCategoryId)
       setSynopsis(suggestion.sinopse)
       setLanguage(suggestion.idioma)
+      setEditionDrafts((current) => {
+        const primaryFormat: BookFormat =
+          formatSelection === 'EBOOK' ? 'EBOOK' : 'FISICO'
+
+        function applySuggestion(format: BookFormat): EditionDraft {
+          if (!selectedFormats.includes(format)) return current[format]
+
+          return {
+            ...current[format],
+            isbn:
+              format === primaryFormat && isbn.trim()
+                ? isbn.trim()
+                : current[format].isbn,
+            publisher:
+              suggestion.editoraSugerida ?? current[format].publisher,
+            publicationYear:
+              suggestion.anoPublicacaoSugerido === null
+                ? current[format].publicationYear
+                : String(suggestion.anoPublicacaoSugerido),
+            pageCount:
+              suggestion.numeroPaginasSugerido === null
+                ? current[format].pageCount
+                : String(suggestion.numeroPaginasSugerido),
+          }
+        }
+
+        return {
+          FISICO: applySuggestion('FISICO'),
+          EBOOK: applySuggestion('EBOOK'),
+        }
+      })
       setAiApplied(true)
-      setAiNotice('Sugestões preenchidas. Revise os dados antes de continuar.')
+      setAiNotice(
+        'Livro e dados editoriais preenchidos. Revise as sugestões antes de continuar.',
+      )
     } catch (suggestionError) {
       setError(getErrorMessage(suggestionError))
     } finally {
@@ -715,42 +781,69 @@ function RegistrationPanel({
           categoriaIds: [categoryId],
         })
         setBook({ id: createdBook.id, title: normalizedTitle })
+        if (isbn.trim()) {
+          const primaryFormat: BookFormat =
+            formatSelection === 'EBOOK' ? 'EBOOK' : 'FISICO'
+          setEditionDrafts((current) => ({
+            ...current,
+            [primaryFormat]: {
+              ...current[primaryFormat],
+              isbn: current[primaryFormat].isbn || isbn.trim(),
+            },
+          }))
+        }
         setStep(2)
         return
       }
 
       if (step === 2 && book) {
-        const createdEdition = await createEdition(token, {
-          livroId: book.id,
-          formato: format,
-          isbn: getOptionalValue(formData, 'isbn'),
-          editora: getOptionalValue(formData, 'publisher'),
-          anoPublicacao: getOptionalNumber(formData, 'publicationYear'),
-          numeroPaginas: getOptionalNumber(formData, 'pageCount'),
-        })
-        setEdition(createdEdition)
+        const createdEditions: CatalogEdition[] = []
+
+        for (const selectedFormat of selectedFormats) {
+          const draft = editionDrafts[selectedFormat]
+          createdEditions.push(
+            await createEdition(token, {
+              livroId: book.id,
+              formato: selectedFormat,
+              isbn: optionalText(draft.isbn),
+              editora: optionalText(draft.publisher),
+              anoPublicacao: optionalNumber(draft.publicationYear),
+              numeroPaginas: optionalNumber(draft.pageCount),
+            }),
+          )
+        }
+
+        setEditions(createdEditions)
         setStep(3)
         return
       }
 
-      if (step === 3 && edition) {
-        const price = Number(getRequiredValue(formData, 'price'))
-        await createOffer(
-          token,
-          format === 'FISICO'
-            ? {
-                edicaoId: edition.id,
-                formato: 'FISICO',
-                preco: price,
-                estoque: Number(getRequiredValue(formData, 'stock')),
-              }
-            : {
-                edicaoId: edition.id,
-                formato: 'EBOOK',
-                preco: price,
-                chaveArquivoDigital: getRequiredValue(formData, 'digitalKey'),
-              },
-        )
+      if (step === 3 && editions.length > 0) {
+        for (const currentEdition of editions) {
+          const format = currentEdition.formato
+          const price = Number(getRequiredValue(formData, `price-${format}`))
+          await createOffer(
+            token,
+            format === 'FISICO'
+              ? {
+                  edicaoId: currentEdition.id,
+                  formato: 'FISICO',
+                  preco: price,
+                  estoque: Number(
+                    getRequiredValue(formData, `stock-${format}`),
+                  ),
+                }
+              : {
+                  edicaoId: currentEdition.id,
+                  formato: 'EBOOK',
+                  preco: price,
+                  chaveArquivoDigital: getRequiredValue(
+                    formData,
+                    `digitalKey-${format}`,
+                  ),
+                },
+          )
+        }
         onFinished()
       }
     } catch (submitError) {
@@ -860,6 +953,45 @@ function RegistrationPanel({
                   maxLength={17}
                 />
               </Field>
+              <fieldset className="format-selection">
+                <legend>Formatos disponíveis</legend>
+                <div
+                  className="format-control three-options"
+                  role="group"
+                  aria-label="Formatos disponíveis"
+                >
+                  <button
+                    type="button"
+                    className={
+                      formatSelection === 'FISICO' ? 'active' : undefined
+                    }
+                    aria-pressed={formatSelection === 'FISICO'}
+                    onClick={() => setFormatSelection('FISICO')}
+                  >
+                    Livro físico
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      formatSelection === 'EBOOK' ? 'active' : undefined
+                    }
+                    aria-pressed={formatSelection === 'EBOOK'}
+                    onClick={() => setFormatSelection('EBOOK')}
+                  >
+                    E-book
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      formatSelection === 'AMBOS' ? 'active' : undefined
+                    }
+                    aria-pressed={formatSelection === 'AMBOS'}
+                    onClick={() => setFormatSelection('AMBOS')}
+                  >
+                    Ambos
+                  </button>
+                </div>
+              </fieldset>
               <div className="ai-assistant">
                 <span className="ai-assistant-label">
                   <Sparkles size={18} aria-hidden="true" />
@@ -974,87 +1106,141 @@ function RegistrationPanel({
           {step === 2 && book && (
             <>
               <FormHeading
-                title="Dados da edição"
-                description={book.title}
+                title={
+                  selectedFormats.length === 1
+                    ? 'Dados da edição'
+                    : 'Dados das edições'
+                }
+                description={`${book.title} · Revise os dados de cada formato.`}
               />
-              <div className="format-control" role="group" aria-label="Formato do livro">
-                <button
-                  type="button"
-                  className={format === 'FISICO' ? 'active' : undefined}
-                  onClick={() => setFormat('FISICO')}
-                >
-                  Livro físico
-                </button>
-                <button
-                  type="button"
-                  className={format === 'EBOOK' ? 'active' : undefined}
-                  onClick={() => setFormat('EBOOK')}
-                >
-                  E-book
-                </button>
-              </div>
-              <Field label="ISBN" optional>
-                <input
-                  name="isbn"
-                  value={isbn}
-                  onChange={(event) => setIsbn(event.target.value)}
-                  inputMode="numeric"
-                  maxLength={17}
-                />
-              </Field>
-              <Field label="Editora" optional>
-                <input name="publisher" maxLength={160} />
-              </Field>
-              <div className="form-grid equal-columns">
-                <Field label="Ano de publicação" optional>
-                  <input
-                    name="publicationYear"
-                    type="number"
-                    min={1450}
-                    max={new Date().getFullYear() + 1}
-                  />
-                </Field>
-                <Field label="Número de páginas" optional>
-                  <input name="pageCount" type="number" min={1} max={100000} />
-                </Field>
-              </div>
+              {selectedFormats.map((selectedFormat) => {
+                const draft = editionDrafts[selectedFormat]
+
+                return (
+                  <section className="edition-form-section" key={selectedFormat}>
+                    <header>
+                      <strong>{formatBookFormat(selectedFormat)}</strong>
+                      {aiApplied && <span>Dados sugeridos pela IA</span>}
+                    </header>
+                    <Field label="ISBN" optional>
+                      <input
+                        value={draft.isbn}
+                        onChange={(event) =>
+                          updateEditionDraft(
+                            selectedFormat,
+                            'isbn',
+                            event.target.value,
+                          )
+                        }
+                        inputMode="numeric"
+                        maxLength={17}
+                      />
+                    </Field>
+                    <Field label="Editora" optional>
+                      <input
+                        value={draft.publisher}
+                        onChange={(event) =>
+                          updateEditionDraft(
+                            selectedFormat,
+                            'publisher',
+                            event.target.value,
+                          )
+                        }
+                        maxLength={160}
+                      />
+                    </Field>
+                    <div className="form-grid equal-columns">
+                      <Field label="Ano de publicação" optional>
+                        <input
+                          value={draft.publicationYear}
+                          onChange={(event) =>
+                            updateEditionDraft(
+                              selectedFormat,
+                              'publicationYear',
+                              event.target.value,
+                            )
+                          }
+                          type="number"
+                          min={1450}
+                          max={new Date().getFullYear() + 1}
+                        />
+                      </Field>
+                      <Field label="Número de páginas" optional>
+                        <input
+                          value={draft.pageCount}
+                          onChange={(event) =>
+                            updateEditionDraft(
+                              selectedFormat,
+                              'pageCount',
+                              event.target.value,
+                            )
+                          }
+                          type="number"
+                          min={1}
+                          max={100000}
+                        />
+                      </Field>
+                    </div>
+                  </section>
+                )
+              })}
             </>
           )}
 
-          {step === 3 && book && edition && (
+          {step === 3 && book && editions.length > 0 && (
             <>
               <FormHeading
-                title="Condições da oferta"
-                description={`${book.title} · ${format === 'FISICO' ? 'Livro físico' : 'E-book'}`}
+                title={
+                  editions.length === 1
+                    ? 'Condições da oferta'
+                    : 'Condições das ofertas'
+                }
+                description={`${book.title} · Informe os dados comerciais.`}
               />
-              <Field label="Preço">
-                <span className="money-input">
-                  <span>R$</span>
-                  <input
-                    name="price"
-                    type="number"
-                    min={0}
-                    max={99999999.99}
-                    step="0.01"
-                    required
-                    autoFocus
-                  />
-                </span>
-              </Field>
-              {format === 'FISICO' ? (
-                <Field label="Quantidade em estoque">
-                  <input name="stock" type="number" min={0} required />
-                </Field>
-              ) : (
-                <Field label="Identificador do arquivo digital">
-                  <input
-                    name="digitalKey"
-                    placeholder="ebooks/nome-do-arquivo.epub"
-                    maxLength={500}
-                    required
-                  />
-                </Field>
-              )}
+              {editions.map((currentEdition, index) => {
+                const format = currentEdition.formato
+
+                return (
+                  <section className="offer-form-section" key={currentEdition.id}>
+                    <header>
+                      <strong>{formatBookFormat(format)}</strong>
+                    </header>
+                    <Field label="Preço">
+                      <span className="money-input">
+                        <span>R$</span>
+                        <input
+                          name={`price-${format}`}
+                          type="number"
+                          min={0}
+                          max={99999999.99}
+                          step="0.01"
+                          required
+                          autoFocus={index === 0}
+                        />
+                      </span>
+                    </Field>
+                    {format === 'FISICO' ? (
+                      <Field label="Quantidade em estoque">
+                        <input
+                          name={`stock-${format}`}
+                          type="number"
+                          min={0}
+                          required
+                        />
+                      </Field>
+                    ) : (
+                      <Field label="Identificador do arquivo digital">
+                        <input
+                          name={`digitalKey-${format}`}
+                          placeholder="ebooks/nome-do-arquivo.epub"
+                          maxLength={500}
+                          required
+                        />
+                      </Field>
+                    )}
+                  </section>
+                )
+              })}
               <div className="draft-note">
                 <Package size={18} aria-hidden="true" />
                 <p>
@@ -1082,7 +1268,7 @@ function RegistrationPanel({
               {submitting ? (
                 <LoaderCircle className="button-loader" size={18} />
               ) : step === 3 ? (
-                'Criar rascunho'
+                editions.length > 1 ? 'Criar rascunhos' : 'Criar rascunho'
               ) : (
                 'Salvar e continuar'
               )}
@@ -1185,6 +1371,14 @@ function ReferenceButton({ label, onClick }: { label: string; onClick: () => voi
   )
 }
 
+function getSelectedFormats(selection: FormatSelection): BookFormat[] {
+  return selection === 'AMBOS' ? ['FISICO', 'EBOOK'] : [selection]
+}
+
+function formatBookFormat(format: BookFormat) {
+  return format === 'FISICO' ? 'Livro físico' : 'E-book'
+}
+
 function getRequiredValue(formData: FormData, name: string) {
   return String(formData.get(name) ?? '').trim()
 }
@@ -1194,9 +1388,14 @@ function getOptionalValue(formData: FormData, name: string) {
   return value || undefined
 }
 
-function getOptionalNumber(formData: FormData, name: string) {
-  const value = getOptionalValue(formData, name)
-  return value ? Number(value) : undefined
+function optionalText(value: string) {
+  const normalizedValue = value.trim()
+  return normalizedValue || undefined
+}
+
+function optionalNumber(value: string) {
+  const normalizedValue = optionalText(value)
+  return normalizedValue ? Number(normalizedValue) : undefined
 }
 
 function findReferenceByName<T extends { id: string; nome: string }>(

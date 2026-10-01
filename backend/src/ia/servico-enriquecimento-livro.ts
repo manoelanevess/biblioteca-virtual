@@ -8,8 +8,6 @@ import {
   type SolicitarSugestaoLivroEntrada,
 } from '../schemas/ia.js'
 
-const modelo = 'gemini-flash-latest'
-
 export async function sugerirDadosLivro(
   entrada: SolicitarSugestaoLivroEntrada,
 ) {
@@ -30,7 +28,7 @@ export async function sugerirDadosLivro(
 
   try {
     const resposta = await cliente.models.generateContent({
-      model: modelo,
+      model: env.GEMINI_MODEL,
       contents: JSON.stringify({
         livro: entrada,
         categoriasDisponiveis: nomesCategorias,
@@ -44,6 +42,8 @@ export async function sugerirDadosLivro(
           'Escolha exatamente uma categoria da lista quando houver uma opcao adequada.',
           'Use um nome curto e comum para a categoria quando nenhuma opcao for adequada.',
           'Informe o idioma no formato BCP 47, como pt-BR, en ou es.',
+          'Sugira editora, ano de publicacao e numero de paginas da edicao identificada pelo ISBN, quando houver.',
+          'Quando um dado editorial nao puder ser confirmado com seguranca, retorne null nesse campo.',
         ].join(' '),
         temperature: 0.2,
         responseMimeType: 'application/json',
@@ -55,12 +55,18 @@ export async function sugerirDadosLivro(
             sinopse: { type: 'string' },
             categoriaSugerida: { type: 'string' },
             idioma: { type: 'string' },
+            editoraSugerida: { type: ['string', 'null'] },
+            anoPublicacaoSugerido: { type: ['integer', 'null'] },
+            numeroPaginasSugerido: { type: ['integer', 'null'] },
           },
           required: [
             'autorSugerido',
             'sinopse',
             'categoriaSugerida',
             'idioma',
+            'editoraSugerida',
+            'anoPublicacaoSugerido',
+            'numeroPaginasSugerido',
           ],
         },
       },

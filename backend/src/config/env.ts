@@ -12,6 +12,7 @@ const envSchema = z.object({
     (valor) => (valor === '' ? undefined : valor),
     z.string().min(1).optional(),
   ),
+  GEMINI_MODEL: z.string().trim().min(1).default('gemini-3.5-flash-lite'),
 })
 
 export const env = envSchema.parse(process.env)

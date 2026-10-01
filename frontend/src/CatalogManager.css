@@ -907,6 +907,20 @@
   align-items: start;
 }
 
+.format-selection {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.format-selection legend {
+  margin-bottom: 7px;
+  color: #33443d;
+  font-size: 0.77rem;
+  font-weight: 750;
+}
+
 .reference-button {
   color: #285c4e;
   background: #edf5f1;
@@ -927,6 +941,10 @@
   border-radius: 7px;
 }
 
+.format-control.three-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .format-control button {
   color: #64736c;
   background: transparent;
@@ -942,6 +960,35 @@
   color: #245b4d;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(20, 50, 42, 0.1);
+}
+
+.edition-form-section,
+.offer-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 18px;
+  border-top: 1px solid #d8e0dc;
+}
+
+.edition-form-section > header,
+.offer-form-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.edition-form-section > header strong,
+.offer-form-section > header strong {
+  color: #285c4e;
+  font-size: 0.84rem;
+}
+
+.edition-form-section > header span {
+  color: #75591e;
+  font-size: 0.67rem;
+  font-weight: 700;
 }
 
 .highlight-option {

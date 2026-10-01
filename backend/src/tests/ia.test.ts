@@ -12,12 +12,14 @@ describe('consulta de livro com IA', () => {
       titulo: '  Dom Casmurro  ',
       autor: '  Machado de Assis  ',
       isbn: '978-85-359-0277-5',
+      formatos: ['FISICO', 'EBOOK'],
     })
 
     assert.deepEqual(entrada, {
       titulo: 'Dom Casmurro',
       autor: 'Machado de Assis',
       isbn: '9788535902775',
+      formatos: ['FISICO', 'EBOOK'],
     })
   })
 
@@ -30,6 +32,15 @@ describe('consulta de livro com IA', () => {
     assert.equal(resultado.success, false)
   })
 
+  it('rejeita formatos repetidos', () => {
+    const resultado = solicitarSugestaoLivroSchema.safeParse({
+      titulo: 'Dom Casmurro',
+      formatos: ['FISICO', 'FISICO'],
+    })
+
+    assert.equal(resultado.success, false)
+  })
+
   it('valida a resposta estruturada da IA', () => {
     const resultado = sugestaoLivroIaSchema.safeParse({
       autorSugerido: 'Machado de Assis',
@@ -37,6 +48,24 @@ describe('consulta de livro com IA', () => {
         'Um retrato de memoria, ciume e ambiguidade narrado por Bento Santiago ao reconstruir sua juventude.',
       categoriaSugerida: 'Literatura brasileira',
       idioma: 'pt-BR',
+      editoraSugerida: 'Companhia das Letras',
+      anoPublicacaoSugerido: 2016,
+      numeroPaginasSugerido: 368,
+    })
+
+    assert.equal(resultado.success, true)
+  })
+
+  it('aceita dados editoriais desconhecidos', () => {
+    const resultado = sugestaoLivroIaSchema.safeParse({
+      autorSugerido: 'Machado de Assis',
+      sinopse:
+        'Um retrato de memoria, ciume e ambiguidade narrado por Bento Santiago ao reconstruir sua juventude.',
+      categoriaSugerida: 'Literatura brasileira',
+      idioma: 'pt-BR',
+      editoraSugerida: null,
+      anoPublicacaoSugerido: null,
+      numeroPaginasSugerido: null,
     })
 
     assert.equal(resultado.success, true)
