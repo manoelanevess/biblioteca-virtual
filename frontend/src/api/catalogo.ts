@@ -37,6 +37,7 @@ export type CatalogReferences = {
 export type ManagedOffer = {
   id: string
   preco: number
+  precoAluguel: number | null
   estoque: number | null
   status: OfferStatus
   possuiArquivoDigital: boolean
@@ -59,6 +60,7 @@ export type ManagedOffer = {
 export type PublicOffer = {
   id: string
   preco: number
+  precoAluguel: number | null
   estoque: number | null
   vendedor: {
     id: string
@@ -155,12 +157,14 @@ export type NewOfferInput =
       edicaoId: string
       formato: 'FISICO'
       preco: number
+      precoAluguel?: number
       estoque: number
     }
   | {
       edicaoId: string
       formato: 'EBOOK'
       preco: number
+      precoAluguel?: number
       chaveArquivoDigital: string
     }
 

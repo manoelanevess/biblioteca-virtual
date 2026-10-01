@@ -6,12 +6,21 @@ export type ReadingStatus = 'NAO_INICIADO' | 'LENDO' | 'CONCLUIDO'
 
 export type LibraryItem = {
   id: string
+  tipoAcesso: 'COMPRA' | 'ALUGUEL'
+  acessoExpiraEm: string | null
+  acessoAtivo: boolean
   statusLeitura: ReadingStatus
   percentualLido: number
   paginaAtual: number | null
   ultimaLeituraEm: string | null
   adicionadoEm: string
   atualizadoEm: string
+  pedido: {
+    id: string
+    tipo: 'COMPRA' | 'ALUGUEL'
+    devolucaoPrevista: string | null
+    devolvidoEm: string | null
+  } | null
   edicao: {
     id: string
     isbn: string | null

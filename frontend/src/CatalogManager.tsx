@@ -514,7 +514,16 @@ function OfferRow({
           {offer.edicao.formato === 'FISICO' ? 'Físico' : 'E-book'}
         </span>
       </td>
-      <td className="numeric-cell">{formatCurrency(offer.preco)}</td>
+      <td className="numeric-cell">
+        <span className="offer-prices">
+          <strong>{formatCurrency(offer.preco)}</strong>
+          <small>
+            {offer.precoAluguel === null
+              ? 'Sem aluguel'
+              : `${formatCurrency(offer.precoAluguel)} / 14 dias`}
+          </small>
+        </span>
+      </td>
       <td className="numeric-cell">
         {offer.edicao.formato === 'FISICO' ? offer.estoque : 'Digital'}
       </td>
@@ -609,6 +618,9 @@ function RegistrationPanel({
     FISICO: { ...emptyEditionDraft },
     EBOOK: { ...emptyEditionDraft },
   })
+  const [rentalEnabled, setRentalEnabled] = useState<
+    Record<BookFormat, boolean>
+  >({ FISICO: false, EBOOK: false })
   const [referenceKind, setReferenceKind] = useState<ReferenceKind | null>(null)
   const [referenceName, setReferenceName] = useState('')
   const [title, setTitle] = useState('')
@@ -829,6 +841,13 @@ function RegistrationPanel({
                   edicaoId: currentEdition.id,
                   formato: 'FISICO',
                   preco: price,
+                  ...(rentalEnabled[format]
+                    ? {
+                        precoAluguel: Number(
+                          getRequiredValue(formData, `rentalPrice-${format}`),
+                        ),
+                      }
+                    : {}),
                   estoque: Number(
                     getRequiredValue(formData, `stock-${format}`),
                   ),
@@ -837,6 +856,13 @@ function RegistrationPanel({
                   edicaoId: currentEdition.id,
                   formato: 'EBOOK',
                   preco: price,
+                  ...(rentalEnabled[format]
+                    ? {
+                        precoAluguel: Number(
+                          getRequiredValue(formData, `rentalPrice-${format}`),
+                        ),
+                      }
+                    : {}),
                   chaveArquivoDigital: getRequiredValue(
                     formData,
                     `digitalKey-${format}`,
@@ -1219,6 +1245,37 @@ function RegistrationPanel({
                         />
                       </span>
                     </Field>
+                    <label className="offer-rental-toggle">
+                      <input
+                        type="checkbox"
+                        checked={rentalEnabled[format]}
+                        onChange={(event) =>
+                          setRentalEnabled((current) => ({
+                            ...current,
+                            [format]: event.target.checked,
+                          }))
+                        }
+                      />
+                      <span>
+                        <strong>Disponibilizar para aluguel</strong>
+                        <small>Prazo padrão de 14 dias.</small>
+                      </span>
+                    </label>
+                    {rentalEnabled[format] && (
+                      <Field label="Preço do aluguel">
+                        <span className="money-input">
+                          <span>R$</span>
+                          <input
+                            name={`rentalPrice-${format}`}
+                            type="number"
+                            min={0.01}
+                            max={99999999.99}
+                            step="0.01"
+                            required
+                          />
+                        </span>
+                      </Field>
+                    )}
                     {format === 'FISICO' ? (
                       <Field label="Quantidade em estoque">
                         <input
