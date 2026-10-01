@@ -22,6 +22,7 @@ import {
   clearSession,
   getCurrentUser,
   getStoredSession,
+  hasPersistentSession,
   login,
   register,
   saveSession,
@@ -47,9 +48,11 @@ function App() {
   const [mode, setMode] = useState<AuthMode>('login')
   const [showAuthentication, setShowAuthentication] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [keepConnected, setKeepConnected] = useState(false)
   const [registrationRole, setRegistrationRole] =
     useState<RegistrationRole>('CLIENTE')
   const [initialSession] = useState(getStoredSession)
+  const [initialSessionIsPersistent] = useState(hasPersistentSession)
   const [session, setSession] = useState<Session | null>(initialSession)
   const [restoringSession, setRestoringSession] = useState(
     initialSession !== null,
@@ -67,7 +70,7 @@ function App() {
     getCurrentUser(initialSession.token)
       .then((user) => {
         const restoredSession = { ...initialSession, user }
-        saveSession(restoredSession)
+        saveSession(restoredSession, initialSessionIsPersistent)
         setSession(restoredSession)
       })
       .catch(() => {
@@ -75,11 +78,12 @@ function App() {
         setSession(null)
       })
       .finally(() => setRestoringSession(false))
-  }, [initialSession])
+  }, [initialSession, initialSessionIsPersistent])
 
   function changeMode(nextMode: AuthMode) {
     setMode(nextMode)
     setShowPassword(false)
+    setKeepConnected(false)
     setError(null)
   }
 
@@ -102,7 +106,7 @@ function App() {
             role: registrationRole,
           })
 
-      saveSession(nextSession)
+      saveSession(nextSession, isLogin && keepConnected)
       setSession(nextSession)
       setShowAuthentication(false)
     } catch (submitError) {
@@ -235,50 +239,22 @@ function App() {
             aria-busy={submitting}
           >
             {!isLogin && (
-              <>
-                <fieldset className="registration-role">
-                  <legend>Tipo de conta</legend>
-                  <div>
-                    <button
-                      type="button"
-                      className={registrationRole === 'CLIENTE' ? 'active' : undefined}
-                      aria-pressed={registrationRole === 'CLIENTE'}
-                      onClick={() => setRegistrationRole('CLIENTE')}
-                      disabled={submitting}
-                    >
-                      <User size={17} aria-hidden="true" />
-                      Cliente
-                    </button>
-                    <button
-                      type="button"
-                      className={registrationRole === 'VENDEDOR' ? 'active' : undefined}
-                      aria-pressed={registrationRole === 'VENDEDOR'}
-                      onClick={() => setRegistrationRole('VENDEDOR')}
-                      disabled={submitting}
-                    >
-                      <Store size={17} aria-hidden="true" />
-                      Vendedor
-                    </button>
-                  </div>
-                </fieldset>
-
-                <label className="field-group">
-                  <span>Nome</span>
-                  <span className="field-control">
-                    <User size={18} aria-hidden="true" />
-                    <input
-                      name="name"
-                      type="text"
-                      autoComplete="name"
-                      placeholder="Seu nome completo"
-                      minLength={2}
-                      maxLength={120}
-                      disabled={submitting}
-                      required
-                    />
-                  </span>
-                </label>
-              </>
+              <label className="field-group">
+                <span>Nome</span>
+                <span className="field-control">
+                  <User size={18} aria-hidden="true" />
+                  <input
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Seu nome completo"
+                    minLength={2}
+                    maxLength={120}
+                    disabled={submitting}
+                    required
+                  />
+                </span>
+              </label>
             )}
 
             <label className="field-group">
@@ -328,10 +304,48 @@ function App() {
               </span>
             </label>
 
+            {isLogin && (
+              <label className="remember-option">
+                <input
+                  type="checkbox"
+                  checked={keepConnected}
+                  onChange={(event) => setKeepConnected(event.target.checked)}
+                  disabled={submitting}
+                />
+                <span>Manter conectado</span>
+              </label>
+            )}
+
             {!isLogin && (
-              <p className="password-requirement">
-                Use pelo menos uma letra e um número.
-              </p>
+              <>
+                <p className="password-requirement">
+                  Use pelo menos uma letra e um número.
+                </p>
+
+                <label
+                  className={`seller-option${
+                    registrationRole === 'VENDEDOR' ? ' active' : ''
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={registrationRole === 'VENDEDOR'}
+                    onChange={(event) =>
+                      setRegistrationRole(
+                        event.target.checked ? 'VENDEDOR' : 'CLIENTE',
+                      )
+                    }
+                    disabled={submitting}
+                  />
+                  <span>
+                    <strong>Sou vendedor</strong>
+                    <small>
+                      Minha conta será de vendedor, para cadastrar livros e
+                      ofertas na loja.
+                    </small>
+                  </span>
+                </label>
+              </>
             )}
 
             {error && (

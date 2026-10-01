@@ -2,6 +2,8 @@ import { apiUrl } from './base'
 
 const sessionStorageKey = 'biblioteca-virtual-session'
 const clientIdStorageKey = 'biblioteca-virtual-client-id'
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export type UserRole = 'CLIENTE' | 'VENDEDOR' | 'ADMINISTRADOR'
 
@@ -123,7 +125,9 @@ export async function enableSellerProfile(token: string) {
 
 export function getStoredSession(): Session | null {
   try {
-    const storedValue = localStorage.getItem(sessionStorageKey)
+    const persistentValue = localStorage.getItem(sessionStorageKey)
+    const storedValue =
+      persistentValue ?? sessionStorage.getItem(sessionStorageKey)
 
     if (!storedValue) {
       return null
@@ -142,7 +146,7 @@ export function getStoredSession(): Session | null {
     }
 
     const validSession = session as Session
-    syncClientId(validSession)
+    syncClientId(validSession, persistentValue !== null)
     return validSession
   } catch {
     clearSession()
@@ -150,19 +154,57 @@ export function getStoredSession(): Session | null {
   }
 }
 
-export function saveSession(session: Session) {
-  localStorage.setItem(sessionStorageKey, JSON.stringify(session))
-  syncClientId(session)
+export function hasPersistentSession() {
+  return localStorage.getItem(sessionStorageKey) !== null
+}
+
+export function getStoredClientId(): string | null {
+  const clientId = localStorage.getItem(clientIdStorageKey)
+
+  if (!clientId) {
+    return null
+  }
+
+  if (!uuidPattern.test(clientId)) {
+    localStorage.removeItem(clientIdStorageKey)
+    return null
+  }
+
+  return clientId
+}
+
+export function saveSession(session: Session, keepConnected = false) {
+  const serializedSession = JSON.stringify(session)
+
+  localStorage.removeItem(sessionStorageKey)
+  sessionStorage.removeItem(sessionStorageKey)
+
+  if (keepConnected) {
+    localStorage.setItem(sessionStorageKey, serializedSession)
+  } else {
+    sessionStorage.setItem(sessionStorageKey, serializedSession)
+  }
+
+  syncClientId(session, keepConnected)
 }
 
 export function clearSession() {
   localStorage.removeItem(sessionStorageKey)
+  sessionStorage.removeItem(sessionStorageKey)
   localStorage.removeItem(clientIdStorageKey)
 }
 
-function syncClientId(session: Session) {
-  if (session.user.role === 'CLIENTE') {
-    localStorage.setItem(clientIdStorageKey, session.user.id)
+function syncClientId(session: Session, keepConnected: boolean) {
+  if (
+    keepConnected &&
+    session.user.role === 'CLIENTE' &&
+    uuidPattern.test(session.user.id)
+  ) {
+    const storedClientId = getStoredClientId()
+
+    if (storedClientId !== session.user.id) {
+      localStorage.setItem(clientIdStorageKey, session.user.id)
+    }
     return
   }
 
