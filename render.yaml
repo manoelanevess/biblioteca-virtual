@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: biblioteca-virtual-api
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm db:generate && pnpm --dir backend build
+    preDeployCommand: pnpm --dir backend prisma:deploy
+    startCommand: pnpm --dir backend start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN_SECONDS
+        value: "7200"
+      - key: CORS_ORIGIN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

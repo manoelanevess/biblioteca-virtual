@@ -5,7 +5,15 @@ import swaggerUi from 'swagger-ui-express'
 
 import { env } from './config/env.js'
 import { openApiDocument } from './docs/openapi.js'
+import { rotaNaoEncontrada, tratarErros } from './middleware/erros.js'
+import { avaliacoesRouter } from './routes/avaliacoes.js'
+import { autenticacaoRouter } from './routes/autenticacao.js'
+import { bibliotecaRouter } from './routes/biblioteca.js'
+import { catalogoRouter } from './routes/catalogo.js'
+import { dashboardRouter } from './routes/dashboard.js'
+import { gerenciamentoCatalogoRouter } from './routes/gerenciamento-catalogo.js'
 import { healthRouter } from './routes/health.js'
+import { pedidosRouter } from './routes/pedidos.js'
 
 export const app = express()
 
@@ -20,7 +28,13 @@ app.use(express.json())
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument))
 app.use('/api/health', healthRouter)
+app.use('/api/autenticacao', autenticacaoRouter)
+app.use('/api/avaliacoes', avaliacoesRouter)
+app.use('/api/biblioteca', bibliotecaRouter)
+app.use('/api/catalogo', catalogoRouter)
+app.use('/api/dashboard', dashboardRouter)
+app.use('/api/gerenciamento/catalogo', gerenciamentoCatalogoRouter)
+app.use('/api/pedidos', pedidosRouter)
 
-app.use((_request, response) => {
-  response.status(404).json({ message: 'Route not found' })
-})
+app.use(rotaNaoEncontrada)
+app.use(tratarErros)

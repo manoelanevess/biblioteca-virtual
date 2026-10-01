@@ -5,8 +5,14 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3333),
   CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
-  DATABASE_URL: z.string().min(1).optional(),
-  GEMINI_API_KEY: z.string().min(1).optional(),
+  DATABASE_URL: z.string().min(1),
+  JWT_SECRET: z.string().min(32),
+  JWT_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(7200),
+  GEMINI_API_KEY: z.preprocess(
+    (valor) => (valor === '' ? undefined : valor),
+    z.string().min(1).optional(),
+  ),
+  GEMINI_MODEL: z.string().trim().min(1).default('gemini-3.5-flash-lite'),
 })
 
 export const env = envSchema.parse(process.env)

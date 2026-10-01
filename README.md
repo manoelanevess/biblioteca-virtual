@@ -8,7 +8,7 @@ Este projeto sera uma biblioteca virtual com compra de livros fisicos e e-books.
 
 A ideia principal e que o usuario nao apenas compre livros, mas tambem tenha uma area pessoal para acompanhar sua leitura. Depois de comprar um livro, ele podera marcar a porcentagem lida, alterar o status da leitura, favoritar, avaliar e comentar.
 
-O sistema tambem tera uma area administrativa, onde administradores poderao cadastrar livros, controlar estoque, gerenciar formatos disponiveis e acompanhar informacoes importantes sobre vendas e leitura.
+O sistema tambem tera uma area de venda para cadastrar ofertas, controlar estoque e acompanhar o desempenho dos livros. A area administrativa sera usada para gerenciar a plataforma.
 
 ## Proposta atual
 
@@ -35,18 +35,21 @@ Assim, o projeto nao sera apenas uma loja virtual nem apenas um cadastro de livr
 - Avaliar livros com nota e comentario.
 - Receber recomendacoes.
 
-### Administrador
+### Vendedor
 
 - Fazer login.
-- Cadastrar livros.
-- Editar informacoes dos livros.
-- Definir se o livro sera fisico, e-book ou ambos.
-- Controlar preco e estoque.
-- Cadastrar categorias.
-- Acompanhar vendas.
-- Visualizar avaliacoes dos usuarios.
-- Consultar dashboards.
+- Cadastrar e editar ofertas de livros.
+- Definir formato, preco e estoque.
+- Acompanhar vendas e visualizacoes.
+- Consultar o proprio dashboard.
 - Usar IA para auxiliar no cadastro dos livros.
+
+### Administrador
+
+- Gerenciar usuarios e vendedores.
+- Gerenciar livros e categorias.
+- Moderar avaliacoes e informacoes do catalogo.
+- Consultar indicadores gerais da plataforma.
 
 ## Livros fisicos e e-books
 
@@ -82,7 +85,7 @@ O sistema podera recomendar livros com base em compras, favoritos, avaliacoes e 
 
 ## Dashboard
 
-A area administrativa devera ter dashboards para acompanhar o desempenho da plataforma.
+Vendedores e administradores terao dashboards de acordo com suas responsabilidades.
 
 Indicadores iniciais:
 
@@ -93,14 +96,14 @@ Indicadores iniciais:
 - Vendas de livros fisicos vs e-books.
 - Categorias mais procuradas.
 - Estoque baixo.
-- Progresso medio de leitura dos usuarios.
+- Visualizacoes das ofertas.
 - Uso da busca com IA.
 
 ## MVP inicial
 
 Para a primeira versao, o foco sera entregar o essencial:
 
-- Login de usuario e administrador.
+- Login de usuario, vendedor e administrador.
 - Cadastro de livros e categorias.
 - Cadastro dos formatos fisico e e-book.
 - Catalogo de livros.
@@ -110,6 +113,25 @@ Para a primeira versao, o foco sera entregar o essencial:
 - Avaliacao de livros.
 - Busca com IA.
 - Dashboard basico.
+
+## Executando o projeto
+
+Requisitos: Node.js 22.18 ou superior, pnpm 11.19 e Docker.
+
+```powershell
+pnpm install
+Copy-Item backend/.env.example backend/.env
+pnpm db:up
+pnpm db:migrate
+pnpm db:generate
+```
+
+Para iniciar cada parte do sistema:
+
+```powershell
+pnpm dev:backend
+pnpm dev:frontend
+```
 
 ## Observacoes
 
