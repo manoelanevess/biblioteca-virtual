@@ -1,7 +1,44 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "corepack enable && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --dir frontend build",
-  "outputDirectory": "frontend/dist",
-  "framework": "vite"
+  "services": {
+    "backend": {
+      "root": "backend",
+      "framework": "express",
+      "entrypoint": "src/app.ts",
+      "installCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm prisma:generate"
+    },
+    "frontend": {
+      "root": "frontend",
+      "framework": "vite",
+      "installCommand": "corepack enable && pnpm install --frozen-lockfile",
+      "buildCommand": "pnpm build",
+      "outputDirectory": "dist"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api-docs",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/api-docs/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
 }

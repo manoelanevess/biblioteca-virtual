@@ -10,8 +10,8 @@ export const openApiDocument = swaggerJsdoc({
     },
     servers: [
       {
-        url: 'http://localhost:3333',
-        description: 'Ambiente local',
+        url: '/',
+        description: 'Ambiente atual',
       },
     ],
     components: {
