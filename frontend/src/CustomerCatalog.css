@@ -673,9 +673,15 @@
   align-items: center;
   gap: 6px;
   margin-top: 12px;
-  color: #4c6b5d;
+  color: #75591e;
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.book-card .ai-enriched-note {
+  align-items: flex-start;
+  margin-top: 10px;
 }
 
 .edition-list {

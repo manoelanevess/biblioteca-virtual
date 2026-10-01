@@ -129,12 +129,16 @@ export type BookSuggestion = {
   sinopse: string
   categoriaSugerida: string
   idioma: string
+  editoraSugerida: string | null
+  anoPublicacaoSugerido: number | null
+  numeroPaginasSugerido: number | null
 }
 
 export type BookSuggestionInput = {
   titulo: string
   autor?: string
   isbn?: string
+  formatos: BookFormat[]
 }
 
 export type NewEditionInput = {

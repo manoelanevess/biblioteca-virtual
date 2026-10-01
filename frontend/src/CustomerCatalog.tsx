@@ -145,6 +145,21 @@ export function CustomerCatalog({
   }, [])
 
   useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const nextTerm = searchDraft.trim()
+      const termToSearch = nextTerm.length >= 2 ? nextTerm : ''
+
+      if (searchTerm === termToSearch) return
+
+      prepareCatalogLoad()
+      setPage(1)
+      setSearchTerm(termToSearch)
+    }, 500)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [searchDraft, searchTerm])
+
+  useEffect(() => {
     let active = true
 
     getPublicBooks({
@@ -588,6 +603,7 @@ function BookCard({ book, onOpen }: { book: PublicBook; onOpen: () => void }) {
         <p className="book-synopsis">
           {book.sinopse ?? 'Sinopse ainda não informada.'}
         </p>
+        {book.enriquecidoPorIa && <AiContentNotice />}
         <div className="book-formats" aria-label="Formatos disponíveis">
           {formats.map((availableFormat) => (
             <FormatLabel key={availableFormat} format={availableFormat} />
@@ -640,12 +656,7 @@ function BookDetail({
           <p className="detail-synopsis">
             {book.sinopse ?? 'Sinopse ainda não informada.'}
           </p>
-          {book.enriquecidoPorIa && (
-            <span className="ai-enriched-note">
-              <Sparkles size={14} aria-hidden="true" />
-              Dados complementados por IA
-            </span>
-          )}
+          {book.enriquecidoPorIa && <AiContentNotice />}
         </div>
       </div>
 
@@ -1018,6 +1029,15 @@ function PurchaseSuccess({
         Continuar explorando
       </button>
     </div>
+  )
+}
+
+function AiContentNotice() {
+  return (
+    <span className="ai-enriched-note">
+      <Sparkles size={14} aria-hidden="true" />
+      Conteúdo gerado por IA. Pode conter erros.
+    </span>
   )
 }
 
