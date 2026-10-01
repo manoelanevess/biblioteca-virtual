@@ -199,11 +199,13 @@
 .library-card-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .reading-status,
-.edition-format {
+.edition-format,
+.access-type {
   min-height: 25px;
   display: inline-flex;
   align-items: center;
@@ -232,6 +234,16 @@
 .edition-format {
   color: #31566f;
   background: #e8f0f5;
+}
+
+.access-type {
+  color: #75591e;
+  background: #faf0d2;
+}
+
+.access-type.expired {
+  color: #6a7570;
+  background: #edf1ef;
 }
 
 .library-card h2 {
@@ -326,6 +338,30 @@
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.library-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.library-card-actions .return-action {
+  color: #86503e;
+  border-color: #d9bbae;
+}
+
+.library-card-actions .return-action:hover:not(:disabled) {
+  color: #753b28;
+  background: #fbeee9;
+  border-color: #c99886;
+}
+
+.library-card-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .library-card-content > footer button:hover {
@@ -591,6 +627,10 @@
   }
 
   .library-card-content > footer button {
+    width: 100%;
+  }
+
+  .library-card-actions {
     width: 100%;
   }
 

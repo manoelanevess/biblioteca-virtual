@@ -97,6 +97,7 @@ type CheckoutSelection = {
   book: PublicBook
   edition: PublicEdition
   offer: PublicOffer
+  tipo: 'COMPRA' | 'ALUGUEL'
 }
 
 export function CustomerCatalog({
@@ -283,6 +284,7 @@ export function CustomerCatalog({
     book: PublicBook,
     edition: PublicEdition,
     offer: PublicOffer,
+    tipo: CheckoutSelection['tipo'],
   ) {
     if (!token) {
       onAuthenticationRequired?.()
@@ -290,7 +292,7 @@ export function CustomerCatalog({
     }
 
     setPurchaseResult(null)
-    setCheckout({ book, edition, offer })
+    setCheckout({ book, edition, offer, tipo })
   }
 
   function finishPurchase(pedido: PedidoCriado) {
@@ -572,8 +574,8 @@ export function CustomerCatalog({
                 authenticated={Boolean(token)}
                 canReview={canReview}
                 onAuthenticationRequired={onAuthenticationRequired}
-                onBuy={(edition, offer) =>
-                  startCheckout(selectedBook, edition, offer)
+                onSelect={(edition, offer, tipo) =>
+                  startCheckout(selectedBook, edition, offer, tipo)
                 }
               />
             ) : null}
@@ -629,7 +631,11 @@ type BookDetailProps = {
   authenticated: boolean
   canReview: boolean
   onAuthenticationRequired?: () => void
-  onBuy: (edition: PublicEdition, offer: PublicOffer) => void
+  onSelect: (
+    edition: PublicEdition,
+    offer: PublicOffer,
+    tipo: CheckoutSelection['tipo'],
+  ) => void
 }
 
 function BookDetail({
@@ -639,7 +645,7 @@ function BookDetail({
   authenticated,
   canReview,
   onAuthenticationRequired,
-  onBuy,
+  onSelect,
 }: BookDetailProps) {
   return (
     <div className="book-detail-content">
@@ -668,7 +674,7 @@ function BookDetail({
             edition={edition}
             currentUserId={currentUserId}
             authenticated={authenticated}
-            onBuy={(offer) => onBuy(edition, offer)}
+            onSelect={(offer, tipo) => onSelect(edition, offer, tipo)}
           />
         ))}
       </div>
@@ -688,14 +694,14 @@ type EditionOffersProps = {
   edition: PublicEdition
   currentUserId: string | null
   authenticated: boolean
-  onBuy: (offer: PublicOffer) => void
+  onSelect: (offer: PublicOffer, tipo: CheckoutSelection['tipo']) => void
 }
 
 function EditionOffers({
   edition,
   currentUserId,
   authenticated,
-  onBuy,
+  onSelect,
 }: EditionOffersProps) {
   const metadata = [
     edition.editora,
@@ -727,19 +733,38 @@ function EditionOffers({
                 </small>
               </span>
               <div className="public-offer-actions">
-                <strong>{formatCurrency(offer.preco)}</strong>
-                <button
-                  type="button"
-                  onClick={() => onBuy(offer)}
-                  disabled={isOwnOffer || isUnavailable}
-                  title={isOwnOffer ? 'Esta oferta pertence a você' : undefined}
-                >
-                  {isOwnOffer
-                    ? 'Sua oferta'
-                    : authenticated
-                      ? 'Comprar'
-                      : 'Entrar para comprar'}
-                </button>
+                <div className="offer-operation">
+                  <span>{formatCurrency(offer.preco)}</span>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(offer, 'COMPRA')}
+                    disabled={isOwnOffer || isUnavailable}
+                    title={
+                      isOwnOffer ? 'Esta oferta pertence a você' : undefined
+                    }
+                  >
+                    {isOwnOffer
+                      ? 'Sua oferta'
+                      : authenticated
+                        ? 'Comprar'
+                        : 'Entrar para comprar'}
+                  </button>
+                </div>
+                {offer.precoAluguel !== null && (
+                  <div className="offer-operation rental">
+                    <span>{formatCurrency(offer.precoAluguel)}</span>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(offer, 'ALUGUEL')}
+                      disabled={isOwnOffer || isUnavailable}
+                      title={
+                        isOwnOffer ? 'Esta oferta pertence a você' : undefined
+                      }
+                    >
+                      {authenticated ? 'Alugar' : 'Entrar para alugar'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -762,13 +787,15 @@ function PurchaseCheckout({
   onBack,
   onComplete,
 }: PurchaseCheckoutProps) {
-  const { book, edition, offer } = selection
+  const { book, edition, offer, tipo } = selection
   const isPhysical = edition.formato === 'FISICO'
-  const maximumQuantity = isPhysical ? (offer.estoque ?? 1) : 1
+  const isRental = tipo === 'ALUGUEL'
+  const maximumQuantity = isPhysical && !isRental ? (offer.estoque ?? 1) : 1
   const [quantity, setQuantity] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [purchaseError, setPurchaseError] = useState<string | null>(null)
-  const total = offer.preco * quantity
+  const unitPrice = isRental ? offer.precoAluguel! : offer.preco
+  const total = unitPrice * quantity
 
   async function handlePurchase(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -795,6 +822,7 @@ function PurchaseCheckout({
     try {
       const pedido = await criarPedido(token, {
         vendedorId: offer.vendedor.id,
+        tipo,
         itens: [{ ofertaId: offer.id, quantidade: quantity }],
         enderecoEntrega,
       })
@@ -823,7 +851,9 @@ function PurchaseCheckout({
           <ArrowLeft size={19} aria-hidden="true" />
         </button>
         <div>
-          <p className="section-label">Finalizar compra</p>
+          <p className="section-label">
+            {isRental ? 'Finalizar aluguel' : 'Finalizar compra'}
+          </p>
           <h2 id="checkout-title">Revise seu pedido</h2>
         </div>
       </header>
@@ -837,7 +867,7 @@ function PurchaseCheckout({
             <p>{formatAuthors(book)}</p>
             <small>Vendido por {offer.vendedor.nome}</small>
           </div>
-          <strong>{formatCurrency(offer.preco)}</strong>
+          <strong>{formatCurrency(unitPrice)}</strong>
         </section>
 
         {isPhysical ? (
@@ -848,7 +878,11 @@ function PurchaseCheckout({
               </span>
               <div>
                 <h3>Endereço de entrega</h3>
-                <p>Informe onde o livro físico deve ser entregue.</p>
+                <p>
+                  {isRental
+                    ? 'Informe onde o livro físico deve ser entregue e depois devolvido.'
+                    : 'Informe onde o livro físico deve ser entregue.'}
+                </p>
               </div>
             </div>
 
@@ -956,13 +990,16 @@ function PurchaseCheckout({
             <TabletSmartphone size={22} aria-hidden="true" />
             <div>
               <h3>Acesso digital</h3>
-              <p>O ebook será vinculado à sua biblioteca após a compra.</p>
+              <p>
+                O e-book será vinculado à sua biblioteca
+                {isRental ? ' por 14 dias.' : ' após a compra.'}
+              </p>
             </div>
           </div>
         )}
 
         <footer className="checkout-footer">
-          {isPhysical && (
+          {isPhysical && !isRental && (
             <label className="checkout-quantity">
               <span>Quantidade</span>
               <input
@@ -992,7 +1029,11 @@ function PurchaseCheckout({
             ) : (
               <ShoppingBag size={18} aria-hidden="true" />
             )}
-            {submitting ? 'Finalizando' : 'Finalizar compra'}
+            {submitting
+              ? 'Finalizando'
+              : isRental
+                ? 'Confirmar aluguel'
+                : 'Finalizar compra'}
           </button>
         </footer>
 
@@ -1019,8 +1060,14 @@ function PurchaseSuccess({
         <CheckCircle2 size={34} />
       </span>
       <p className="section-label">Pedido aprovado</p>
-      <h2 id="purchase-success-title">Compra concluída</h2>
-      <p>Seu pedido foi registrado com sucesso.</p>
+      <h2 id="purchase-success-title">
+        {pedido.tipo === 'ALUGUEL' ? 'Aluguel confirmado' : 'Compra concluída'}
+      </h2>
+      <p>
+        {pedido.tipo === 'ALUGUEL'
+          ? `Devolução prevista para ${formatDate(pedido.devolucaoPrevista!)}.`
+          : 'Seu pedido foi registrado com sucesso.'}
+      </p>
       <div className="purchase-receipt">
         <span>Pedido #{pedido.id.slice(0, 8).toUpperCase()}</span>
         <strong>{formatCurrency(pedido.valorTotal)}</strong>
@@ -1110,6 +1157,10 @@ function formatCurrency(value: number) {
     style: 'currency',
     currency: 'BRL',
   }).format(value)
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat('pt-BR').format(new Date(value))
 }
 
 function getCoverMark(title: string) {

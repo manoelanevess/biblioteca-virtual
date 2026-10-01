@@ -72,6 +72,7 @@ function criarSelecaoLivro(formato?: FormatoLivro) {
           select: {
             id: true,
             preco: true,
+            precoAluguel: true,
             estoque: true,
             vendedor: {
               select: { id: true, nome: true },
@@ -166,6 +167,8 @@ function mapearLivro(livro: LivroConsultado) {
       ofertas: edicao.ofertas.map((oferta) => ({
         id: oferta.id,
         preco: Number(oferta.preco),
+        precoAluguel:
+          oferta.precoAluguel === null ? null : Number(oferta.precoAluguel),
         estoque: oferta.estoque,
         vendedor: oferta.vendedor,
       })),

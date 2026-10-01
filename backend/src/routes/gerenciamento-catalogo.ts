@@ -327,6 +327,9 @@ gerenciamentoCatalogoRouter.post('/edicoes', async (request, response) => {
  *                 enum: [FISICO, EBOOK]
  *               preco:
  *                 type: number
+ *               precoAluguel:
+ *                 type: number
+ *                 description: Valor opcional para aluguel por 14 dias
  *               estoque:
  *                 type: integer
  *               chaveArquivoDigital:

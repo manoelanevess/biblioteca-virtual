@@ -142,6 +142,30 @@ describe('cadastro do catalogo', () => {
     assert.equal(ebook.success, true)
   })
 
+  it('aceita um preco opcional para aluguel', () => {
+    const oferta = criarOfertaSchema.parse({
+      edicaoId: livroId,
+      formato: 'FISICO',
+      preco: 49.9,
+      precoAluguel: 14.9,
+      estoque: 3,
+    })
+
+    assert.equal(oferta.precoAluguel, 14.9)
+  })
+
+  it('rejeita aluguel com preco zerado', () => {
+    const oferta = criarOfertaSchema.safeParse({
+      edicaoId: livroId,
+      formato: 'EBOOK',
+      preco: 29.9,
+      precoAluguel: 0,
+      chaveArquivoDigital: 'ebooks/dom-casmurro.epub',
+    })
+
+    assert.equal(oferta.success, false)
+  })
+
   it('aceita apenas os status previstos para uma oferta', () => {
     assert.equal(
       alterarStatusOfertaSchema.safeParse({ status: 'ATIVA' }).success,

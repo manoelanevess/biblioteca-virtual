@@ -27,6 +27,7 @@ describe('criacao de pedidos', () => {
     })
 
     assert.equal(resultado.itens[0]!.quantidade, 1)
+    assert.equal(resultado.tipo, 'COMPRA')
     assert.deepEqual(resultado.enderecoEntrega, {
       destinatario: 'Maria Silva',
       cep: '89010000',
@@ -83,5 +84,25 @@ describe('criacao de pedidos', () => {
       ]),
       false,
     )
+  })
+
+  it('aceita aluguel como tipo de pedido', () => {
+    const resultado = criarPedidoSchema.parse({
+      vendedorId,
+      tipo: 'ALUGUEL',
+      itens: [{ ofertaId: primeiraOfertaId }],
+    })
+
+    assert.equal(resultado.tipo, 'ALUGUEL')
+  })
+
+  it('rejeita um tipo de pedido desconhecido', () => {
+    const resultado = criarPedidoSchema.safeParse({
+      vendedorId,
+      tipo: 'EMPRESTIMO',
+      itens: [{ ofertaId: primeiraOfertaId }],
+    })
+
+    assert.equal(resultado.success, false)
   })
 })

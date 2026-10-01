@@ -3,11 +3,13 @@ import {
   BookCheck,
   BookMarked,
   BookOpenText,
+  CalendarClock,
   Check,
   FileText,
   LoaderCircle,
   Pencil,
   RefreshCw,
+  RotateCcw,
   TabletSmartphone,
   X,
 } from 'lucide-react'
@@ -20,6 +22,7 @@ import {
   type ReadingStatus,
 } from './api/biblioteca'
 import type { BookFormat } from './api/catalogo'
+import { devolverAluguel } from './api/pedidos'
 import './PersonalLibrary.css'
 
 type StatusFilter = 'TODOS' | ReadingStatus
@@ -50,6 +53,7 @@ export function PersonalLibrary({ token, firstName }: PersonalLibraryProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [editingItem, setEditingItem] = useState<LibraryItem | null>(null)
+  const [returningItemId, setReturningItemId] = useState<string | null>(null)
 
   async function loadLibrary() {
     setLoading(true)
@@ -120,6 +124,28 @@ export function PersonalLibrary({ token, firstName }: PersonalLibraryProps) {
     setSuccess('Progresso de leitura atualizado.')
   }
 
+  async function handleReturn(item: LibraryItem) {
+    if (!item.pedido) return
+
+    setReturningItemId(item.id)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      await devolverAluguel(token, item.pedido.id)
+      await loadLibrary()
+      setSuccess('Aluguel devolvido. O estoque foi atualizado.')
+    } catch (returnError) {
+      setError(
+        returnError instanceof ApiError
+          ? returnError.message
+          : 'Não foi possível devolver o aluguel.',
+      )
+    } finally {
+      setReturningItemId(null)
+    }
+  }
+
   return (
     <div className="personal-library">
       <header className="library-heading">
@@ -171,7 +197,7 @@ export function PersonalLibrary({ token, firstName }: PersonalLibraryProps) {
             <BookMarked size={28} />
           </span>
           <h2>Sua estante está vazia</h2>
-          <p>Os livros adquiridos aparecerão nesta área.</p>
+          <p>Os livros comprados ou alugados aparecerão nesta área.</p>
         </div>
       ) : (
         <>
@@ -202,6 +228,8 @@ export function PersonalLibrary({ token, firstName }: PersonalLibraryProps) {
                 <LibraryCard
                   item={item}
                   key={item.id}
+                  returning={returningItemId === item.id}
+                  onReturn={() => void handleReturn(item)}
                   onEdit={() => {
                     setSuccess(null)
                     setEditingItem(item)
@@ -273,7 +301,17 @@ function LibraryFilters({
   )
 }
 
-function LibraryCard({ item, onEdit }: { item: LibraryItem; onEdit: () => void }) {
+function LibraryCard({
+  item,
+  returning,
+  onEdit,
+  onReturn,
+}: {
+  item: LibraryItem
+  returning: boolean
+  onEdit: () => void
+  onReturn: () => void
+}) {
   const book = item.edicao.livro
   const authors = book.autores.map((author) => author.nome).join(', ')
   const formatLabel = item.edicao.formato === 'EBOOK' ? 'E-book' : 'Físico'
@@ -303,6 +341,12 @@ function LibraryCard({ item, onEdit }: { item: LibraryItem; onEdit: () => void }
             )}
             {formatLabel}
           </span>
+          {item.tipoAcesso === 'ALUGUEL' && (
+            <span className={`access-type${item.acessoAtivo ? '' : ' expired'}`}>
+              <CalendarClock size={14} aria-hidden="true" />
+              {item.acessoAtivo ? 'Alugado' : 'Encerrado'}
+            </span>
+          )}
         </div>
 
         <div>
@@ -326,20 +370,47 @@ function LibraryCard({ item, onEdit }: { item: LibraryItem; onEdit: () => void }
         </div>
 
         <footer>
-          <span>
-            Adicionado em{' '}
-            {new Intl.DateTimeFormat('pt-BR').format(
-              new Date(item.adicionadoEm),
-            )}
-          </span>
-          <button type="button" onClick={onEdit}>
-            <Pencil size={15} aria-hidden="true" />
-            Atualizar leitura
-          </button>
+          <span>{getAccessDescription(item)}</span>
+          <div className="library-card-actions">
+            {item.tipoAcesso === 'ALUGUEL' &&
+              item.acessoAtivo &&
+              item.pedido?.devolvidoEm === null && (
+                <button
+                  className="return-action"
+                  type="button"
+                  onClick={onReturn}
+                  disabled={returning}
+                >
+                  {returning ? (
+                    <LoaderCircle className="button-loader" size={15} />
+                  ) : (
+                    <RotateCcw size={15} aria-hidden="true" />
+                  )}
+                  {returning ? 'Devolvendo' : 'Devolver'}
+                </button>
+              )}
+            <button type="button" onClick={onEdit} disabled={!item.acessoAtivo}>
+              <Pencil size={15} aria-hidden="true" />
+              Atualizar leitura
+            </button>
+          </div>
         </footer>
       </div>
     </article>
   )
+}
+
+function getAccessDescription(item: LibraryItem) {
+  if (item.tipoAcesso === 'ALUGUEL' && item.acessoExpiraEm) {
+    const label = item.acessoAtivo ? 'Devolução até' : 'Aluguel encerrado em'
+    return `${label} ${new Intl.DateTimeFormat('pt-BR').format(
+      new Date(item.acessoExpiraEm),
+    )}`
+  }
+
+  return `Adicionado em ${new Intl.DateTimeFormat('pt-BR').format(
+    new Date(item.adicionadoEm),
+  )}`
 }
 
 function ProgressDialog({

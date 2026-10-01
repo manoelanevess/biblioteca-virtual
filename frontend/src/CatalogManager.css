@@ -1053,6 +1053,58 @@
   box-shadow: none;
 }
 
+.offer-rental-toggle {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  color: #31453d;
+  background: #f7faf8;
+  border: 1px solid #d6e0db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.offer-rental-toggle input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  accent-color: #2f6b5a;
+}
+
+.offer-rental-toggle > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.offer-rental-toggle strong {
+  font-size: 0.76rem;
+}
+
+.offer-rental-toggle small {
+  color: #718079;
+  font-size: 0.68rem;
+}
+
+.offer-prices {
+  display: inline-flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.offer-prices strong {
+  font-size: 0.78rem;
+}
+
+.offer-prices small {
+  color: #7a8781;
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
+
 .draft-note {
   display: flex;
   align-items: flex-start;

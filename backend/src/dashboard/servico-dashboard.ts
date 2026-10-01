@@ -5,6 +5,7 @@ import {
   PerfilUsuario,
   StatusOferta,
   StatusPedido,
+  TipoPedido,
 } from '../generated/prisma/enums.js'
 
 const statusComVenda = [
@@ -16,6 +17,7 @@ const statusComVenda = [
 const selecaoPedidoDashboard = {
   id: true,
   status: true,
+  tipo: true,
   valorTotal: true,
   criadoEm: true,
   cliente: {
@@ -110,15 +112,20 @@ export function montarDashboard(
   const faturamento = arredondarMoeda(
     pedidos.reduce((total, pedido) => total + Number(pedido.valorTotal), 0),
   )
-  const unidadesVendidas = pedidos.reduce(
-    (total, pedido) =>
-      total +
-      pedido.itens.reduce(
-        (totalItens, item) => totalItens + item.quantidade,
-        0,
-      ),
-    0,
-  )
+  const compras = pedidos.filter(({ tipo }) => tipo === TipoPedido.COMPRA)
+  const alugueis = pedidos.filter(({ tipo }) => tipo === TipoPedido.ALUGUEL)
+  const contarUnidades = (pedidosSelecionados: PedidoDashboard[]) =>
+    pedidosSelecionados.reduce(
+      (total, pedido) =>
+        total +
+        pedido.itens.reduce(
+          (totalItens, item) => totalItens + item.quantidade,
+          0,
+        ),
+      0,
+    )
+  const unidadesVendidas = contarUnidades(compras)
+  const unidadesAlugadas = contarUnidades(alugueis)
   const visualizacoes = ofertas.reduce(
     (total, oferta) => total + oferta._count.visualizacoes,
     0,
@@ -134,7 +141,10 @@ export function montarDashboard(
     resumo: {
       faturamento,
       pedidos: pedidos.length,
+      compras: compras.length,
+      alugueis: alugueis.length,
       unidadesVendidas,
+      unidadesAlugadas,
       visualizacoes,
       ofertasAtivas: ofertas.filter(
         ({ status }) => status === StatusOferta.ATIVA,
@@ -152,6 +162,7 @@ export function montarDashboard(
     livrosMaisVendidos: montarRankingLivros(pedidos, ofertas),
     pedidosRecentes: pedidos.slice(0, 5).map((pedido) => ({
       id: pedido.id,
+      tipo: pedido.tipo,
       cliente: pedido.cliente,
       status: pedido.status,
       valorTotal: Number(pedido.valorTotal),
