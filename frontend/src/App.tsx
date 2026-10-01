@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   LibraryBig,
+  LayoutDashboard,
   LoaderCircle,
   LogIn,
   LockKeyhole,
@@ -33,6 +34,7 @@ import { CustomerCatalog } from './CustomerCatalog'
 import { MyReviews } from './MyReviews'
 import { PersonalLibrary } from './PersonalLibrary'
 import { ReviewManager } from './ReviewManager'
+import { SellerDashboard } from './SellerDashboard'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
@@ -42,6 +44,7 @@ type WorkspaceView =
   | 'BIBLIOTECA'
   | 'MINHAS_AVALIACOES'
   | 'LOJA'
+  | 'DASHBOARD'
   | 'GERENCIAR_AVALIACOES'
 
 function App() {
@@ -454,7 +457,7 @@ type AuthenticatedAreaProps = {
 
 function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
   const [view, setView] = useState<WorkspaceView>(
-    session.user.role === 'CLIENTE' ? 'CATALOGO' : 'LOJA',
+    session.user.role === 'CLIENTE' ? 'CATALOGO' : 'DASHBOARD',
   )
   const firstName = session.user.name.trim().split(/\s+/)[0]
   const initials = session.user.name
@@ -507,6 +510,15 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
             <>
               <button
                 type="button"
+                className={view === 'DASHBOARD' ? 'active' : undefined}
+                aria-current={view === 'DASHBOARD' ? 'page' : undefined}
+                onClick={() => setView('DASHBOARD')}
+              >
+                <LayoutDashboard size={18} aria-hidden="true" />
+                <span>Visão geral</span>
+              </button>
+              <button
+                type="button"
                 className={view === 'LOJA' ? 'active' : undefined}
                 aria-current={view === 'LOJA' ? 'page' : undefined}
                 onClick={() => setView('LOJA')}
@@ -556,6 +568,10 @@ function AuthenticatedArea({ session, onLogout }: AuthenticatedAreaProps) {
 
       {view === 'LOJA' && canManageCatalog && (
         <CatalogManager token={session.token} />
+      )}
+
+      {view === 'DASHBOARD' && canManageCatalog && (
+        <SellerDashboard token={session.token} />
       )}
 
       {view === 'GERENCIAR_AVALIACOES' && canManageCatalog && (
