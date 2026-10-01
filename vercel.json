@@ -5,8 +5,8 @@
       "root": ".",
       "framework": "express",
       "entrypoint": "backend/src/app.ts",
-      "installCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm --dir backend prisma:generate && pnpm --dir backend prisma:deploy",
-      "buildCommand": "pnpm --dir backend build"
+      "installCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm --filter backend prisma:generate && pnpm --filter backend prisma:deploy",
+      "buildCommand": "pnpm --filter backend build"
     },
     "frontend": {
       "root": "frontend",
