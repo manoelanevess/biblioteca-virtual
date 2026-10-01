@@ -10,6 +10,7 @@ import { avaliacoesRouter } from './routes/avaliacoes.js'
 import { autenticacaoRouter } from './routes/autenticacao.js'
 import { bibliotecaRouter } from './routes/biblioteca.js'
 import { catalogoRouter } from './routes/catalogo.js'
+import { dashboardRouter } from './routes/dashboard.js'
 import { gerenciamentoCatalogoRouter } from './routes/gerenciamento-catalogo.js'
 import { healthRouter } from './routes/health.js'
 import { pedidosRouter } from './routes/pedidos.js'
@@ -31,6 +32,7 @@ app.use('/api/autenticacao', autenticacaoRouter)
 app.use('/api/avaliacoes', avaliacoesRouter)
 app.use('/api/biblioteca', bibliotecaRouter)
 app.use('/api/catalogo', catalogoRouter)
+app.use('/api/dashboard', dashboardRouter)
 app.use('/api/gerenciamento/catalogo', gerenciamentoCatalogoRouter)
 app.use('/api/pedidos', pedidosRouter)
 
