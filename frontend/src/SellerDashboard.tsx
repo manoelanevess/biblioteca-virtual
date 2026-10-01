@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Banknote,
   BookOpenCheck,
+  CalendarClock,
   Eye,
   LoaderCircle,
   PackageCheck,
@@ -57,7 +58,7 @@ export function SellerDashboard({ token }: { token: string }) {
         <div>
           <p className="section-label">Área restrita</p>
           <h1>Visão geral</h1>
-          <p>Acompanhe o desempenho do catálogo e das vendas.</p>
+          <p>Acompanhe o desempenho do catálogo, das compras e dos aluguéis.</p>
         </div>
         <div className="dashboard-period" aria-label="Período dos gráficos">
           {([6, 12] as const).map((value) => (
@@ -128,11 +129,18 @@ function DashboardContent({
           tone="green"
         />
         <Metric
-          label="Pedidos"
-          value={formatNumber(resumo.pedidos)}
+          label="Compras"
+          value={formatNumber(resumo.compras)}
           detail={`${formatNumber(resumo.unidadesVendidas)} unidades vendidas`}
-          icon={<ReceiptText size={20} />}
+          icon={<BookOpenCheck size={20} />}
           tone="coral"
+        />
+        <Metric
+          label="Aluguéis"
+          value={formatNumber(resumo.alugueis)}
+          detail={`${formatNumber(resumo.unidadesAlugadas)} unidades alugadas`}
+          icon={<CalendarClock size={20} />}
+          tone="blue"
         />
         <Metric
           label="Visualizações"
@@ -147,13 +155,6 @@ function DashboardContent({
           detail="Publicadas no catálogo"
           icon={<PackageCheck size={20} />}
           tone="yellow"
-        />
-        <Metric
-          label="Livros vendidos"
-          value={formatNumber(resumo.unidadesVendidas)}
-          detail="Físicos e digitais"
-          icon={<BookOpenCheck size={20} />}
-          tone="green"
         />
         <Metric
           label="Estoque baixo"
@@ -216,8 +217,8 @@ function MonthlySalesChart({
   return (
     <section className="dashboard-panel sales-chart-panel">
       <PanelHeading
-        title="Evolução das vendas"
-        subtitle="Faturamento mensal"
+        title="Movimentação do catálogo"
+        subtitle="Receita mensal de compras e aluguéis"
         icon={<TrendingUp size={18} />}
       />
       <div
@@ -257,8 +258,8 @@ function FormatChart({ data }: { data: SellerDashboardData['vendasPorFormato'] }
   return (
     <section className="dashboard-panel format-chart-panel">
       <PanelHeading
-        title="Vendas por formato"
-        subtitle="Participação em unidades"
+        title="Pedidos por formato"
+        subtitle="Compras e aluguéis em unidades"
         icon={<ShoppingBag size={18} />}
       />
       <div className="format-chart">
@@ -299,7 +300,7 @@ function TopBooks({ books }: { books: SellerDashboardData['livrosMaisVendidos'] 
     <section className="dashboard-panel top-books-panel">
       <PanelHeading
         title="Livros com melhor desempenho"
-        subtitle="Ranking por unidades vendidas"
+        subtitle="Ranking por unidades compradas ou alugadas"
         icon={<BookOpenCheck size={18} />}
       />
       {books.length ? (
@@ -324,7 +325,7 @@ function TopBooks({ books }: { books: SellerDashboardData['livrosMaisVendidos'] 
           ))}
         </ol>
       ) : (
-        <PanelEmpty text="Os livros vendidos aparecerão neste ranking." />
+        <PanelEmpty text="Os livros comprados ou alugados aparecerão neste ranking." />
       )}
     </section>
   )
@@ -373,7 +374,7 @@ function RecentOrders({
     <section className="dashboard-panel recent-orders-panel">
       <PanelHeading
         title="Pedidos recentes"
-        subtitle="Últimas compras confirmadas"
+        subtitle="Últimas compras e aluguéis confirmados"
         icon={<ReceiptText size={18} />}
       />
       {orders.length ? (
@@ -383,6 +384,7 @@ function RecentOrders({
               <tr>
                 <th>Pedido</th>
                 <th>Cliente</th>
+                <th>Tipo</th>
                 <th>Itens</th>
                 <th>Data</th>
                 <th>Status</th>
@@ -394,6 +396,7 @@ function RecentOrders({
                 <tr key={order.id}>
                   <td>#{order.id.slice(0, 8).toUpperCase()}</td>
                   <td>{order.cliente.nome}</td>
+                  <td>{order.tipo === 'ALUGUEL' ? 'Aluguel' : 'Compra'}</td>
                   <td>{order.quantidadeItens}</td>
                   <td>{formatDate(order.criadoEm)}</td>
                   <td><span className="order-status">{formatOrderStatus(order.status)}</span></td>

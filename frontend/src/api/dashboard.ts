@@ -8,7 +8,10 @@ export type SellerDashboardData = {
   resumo: {
     faturamento: number
     pedidos: number
+    compras: number
+    alugueis: number
     unidadesVendidas: number
+    unidadesAlugadas: number
     visualizacoes: number
     ofertasAtivas: number
     estoqueBaixo: number
@@ -36,6 +39,7 @@ export type SellerDashboardData = {
   }>
   pedidosRecentes: Array<{
     id: string
+    tipo: 'COMPRA' | 'ALUGUEL'
     cliente: {
       id: string
       nome: string
