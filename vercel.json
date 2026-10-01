@@ -2,15 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
     "backend": {
-      "root": "backend",
+      "root": ".",
       "framework": "express",
-      "entrypoint": "src/app.ts",
-      "installCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm prisma:generate && pnpm prisma:deploy",
-      "functions": {
-        "src/app.ts": {
-          "includeFiles": "package.json"
-        }
-      }
+      "entrypoint": "backend/src/app.ts",
+      "installCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm --dir backend prisma:generate && pnpm --dir backend prisma:deploy",
+      "buildCommand": "pnpm --dir backend build"
     },
     "frontend": {
       "root": "frontend",
