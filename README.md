@@ -133,6 +133,31 @@ pnpm dev:backend
 pnpm dev:frontend
 ```
 
+## Implantacao na Vercel
+
+O repositorio usa dois servicos no mesmo projeto da Vercel:
+
+- `frontend`: aplicacao Vite publicada em `/`.
+- `backend`: API Express publicada em `/api` e documentacao Swagger em `/api-docs`.
+
+No projeto da Vercel, selecione **Services** como framework e configure estas variaveis de ambiente:
+
+- `DATABASE_URL`: conexao com um PostgreSQL hospedado.
+- `JWT_SECRET`: chave segura com pelo menos 32 caracteres.
+- `GEMINI_API_KEY`: chave usada pelo preenchimento com IA.
+- `GEMINI_MODEL`: opcional; o valor padrao e `gemini-3.5-flash-lite`.
+
+Nao defina `VITE_API_URL` na Vercel. O frontend acessa a API pelo mesmo dominio usando `/api`.
+
+Antes do primeiro deploy, aplique as migracoes no banco hospedado:
+
+```powershell
+$env:DATABASE_URL="postgresql://..."
+pnpm --dir backend prisma:deploy
+```
+
+Para testar os dois servicos juntos localmente, instale a Vercel CLI e execute `vercel dev -L` na raiz do repositorio.
+
 ## Observacoes
 
 Esta documentacao ainda e inicial. As ideias podem ser ajustadas conforme o projeto evoluir, novas necessidades aparecerem e o modelo do banco de dados for refinado.

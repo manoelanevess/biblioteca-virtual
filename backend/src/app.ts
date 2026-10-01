@@ -38,3 +38,5 @@ app.use('/api/pedidos', pedidosRouter)
 
 app.use(rotaNaoEncontrada)
 app.use(tratarErros)
+
+export default app
