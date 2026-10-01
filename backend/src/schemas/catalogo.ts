@@ -60,6 +60,7 @@ export const criarEdicaoSchema = z
 const ofertaBaseSchema = z.object({
   edicaoId: idSchema,
   preco: z.number().finite().nonnegative().max(99_999_999.99),
+  precoAluguel: z.number().finite().positive().max(99_999_999.99).optional(),
 })
 
 const ofertaFisicaSchema = ofertaBaseSchema.extend({

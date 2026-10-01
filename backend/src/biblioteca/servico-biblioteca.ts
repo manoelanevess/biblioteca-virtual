@@ -1,7 +1,11 @@
 import { prisma } from '../database/prisma.js'
 import { ErroHttp } from '../errors/erro-http.js'
 import type { Prisma } from '../generated/prisma/client.js'
-import { FormatoLivro, StatusLeitura } from '../generated/prisma/enums.js'
+import {
+  FormatoLivro,
+  StatusLeitura,
+  TipoAcessoLivro,
+} from '../generated/prisma/enums.js'
 import type { AtualizarProgressoEntrada } from '../schemas/biblioteca.js'
 
 const selecaoItemBiblioteca = {
@@ -14,11 +18,21 @@ const selecaoItemBiblioteca = {
   atualizadoEm: true,
   itemPedido: {
     select: {
+      pedido: {
+        select: {
+          id: true,
+          tipo: true,
+          devolucaoPrevista: true,
+          devolvidoEm: true,
+        },
+      },
       oferta: {
         select: { chaveArquivoDigital: true },
       },
     },
   },
+  tipoAcesso: true,
+  acessoExpiraEm: true,
   edicao: {
     select: {
       id: true,
@@ -61,9 +75,14 @@ type ItemBibliotecaConsultado = Prisma.ItemBibliotecaGetPayload<{
 
 function mapearItemBiblioteca(item: ItemBibliotecaConsultado) {
   const { itemPedido, edicao, ...progresso } = item
+  const acessoAtivo =
+    item.tipoAcesso === TipoAcessoLivro.COMPRA ||
+    (item.acessoExpiraEm !== null && item.acessoExpiraEm > new Date())
 
   return {
     ...progresso,
+    acessoAtivo,
+    pedido: itemPedido?.pedido ?? null,
     edicao: {
       id: edicao.id,
       isbn: edicao.isbn,
@@ -73,6 +92,7 @@ function mapearItemBiblioteca(item: ItemBibliotecaConsultado) {
       numeroPaginas: edicao.numeroPaginas,
       acessoDigitalDisponivel:
         edicao.formato === FormatoLivro.EBOOK &&
+        acessoAtivo &&
         Boolean(itemPedido?.oferta.chaveArquivoDigital),
       livro: {
         ...edicao.livro,
@@ -104,6 +124,8 @@ export async function atualizarProgresso(
     where: { id: itemBibliotecaId, usuarioId },
     select: {
       id: true,
+      tipoAcesso: true,
+      acessoExpiraEm: true,
       edicao: {
         select: { numeroPaginas: true },
       },
@@ -115,6 +137,17 @@ export async function atualizarProgresso(
       404,
       'ITEM_BIBLIOTECA_NAO_ENCONTRADO',
       'Livro nao encontrado na sua biblioteca',
+    )
+  }
+
+  if (
+    itemAtual.tipoAcesso === TipoAcessoLivro.ALUGUEL &&
+    (itemAtual.acessoExpiraEm === null || itemAtual.acessoExpiraEm <= new Date())
+  ) {
+    throw new ErroHttp(
+      409,
+      'ALUGUEL_ENCERRADO',
+      'O prazo deste aluguel foi encerrado',
     )
   }
 

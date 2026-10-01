@@ -32,6 +32,16 @@ enum StatusPedido {
   CANCELADO
 }
 
+enum TipoPedido {
+  COMPRA
+  ALUGUEL
+}
+
+enum TipoAcessoLivro {
+  COMPRA
+  ALUGUEL
+}
+
 enum StatusLeitura {
   NAO_INICIADO
   LENDO
@@ -146,6 +156,7 @@ model OfertaLivro {
   vendedorId          String               @db.Uuid
   edicaoId            String               @db.Uuid
   preco               Decimal              @db.Decimal(10, 2)
+  precoAluguel        Decimal?             @db.Decimal(10, 2)
   estoque             Int?
   chaveArquivoDigital String?
   status              StatusOferta         @default(RASCUNHO)
@@ -162,21 +173,25 @@ model OfertaLivro {
 }
 
 model Pedido {
-  id              String           @id @default(uuid()) @db.Uuid
-  clienteId       String           @db.Uuid
-  vendedorId      String           @db.Uuid
-  status          StatusPedido     @default(PENDENTE)
-  valorTotal      Decimal          @db.Decimal(10, 2)
-  cliente         Usuario          @relation("PedidosCliente", fields: [clienteId], references: [id], onDelete: Restrict)
-  vendedor        Usuario          @relation("PedidosVendedor", fields: [vendedorId], references: [id], onDelete: Restrict)
-  itens           ItemPedido[]
-  enderecoEntrega EnderecoEntrega?
-  criadoEm        DateTime         @default(now())
-  atualizadoEm    DateTime         @updatedAt
+  id                String           @id @default(uuid()) @db.Uuid
+  clienteId         String           @db.Uuid
+  vendedorId        String           @db.Uuid
+  status            StatusPedido     @default(PENDENTE)
+  tipo              TipoPedido       @default(COMPRA)
+  valorTotal        Decimal          @db.Decimal(10, 2)
+  devolucaoPrevista DateTime?
+  devolvidoEm       DateTime?
+  cliente           Usuario          @relation("PedidosCliente", fields: [clienteId], references: [id], onDelete: Restrict)
+  vendedor          Usuario          @relation("PedidosVendedor", fields: [vendedorId], references: [id], onDelete: Restrict)
+  itens             ItemPedido[]
+  enderecoEntrega   EnderecoEntrega?
+  criadoEm          DateTime         @default(now())
+  atualizadoEm      DateTime         @updatedAt
 
   @@index([clienteId, criadoEm])
   @@index([vendedorId, criadoEm])
   @@index([status])
+  @@index([tipo, devolucaoPrevista])
 }
 
 model ItemPedido {
@@ -208,19 +223,21 @@ model EnderecoEntrega {
 }
 
 model ItemBiblioteca {
-  id              String        @id @default(uuid()) @db.Uuid
-  usuarioId       String        @db.Uuid
-  edicaoId        String        @db.Uuid
-  itemPedidoId    String?       @unique @db.Uuid
-  statusLeitura   StatusLeitura @default(NAO_INICIADO)
-  percentualLido  Int           @default(0)
+  id              String          @id @default(uuid()) @db.Uuid
+  usuarioId       String          @db.Uuid
+  edicaoId        String          @db.Uuid
+  itemPedidoId    String?         @unique @db.Uuid
+  tipoAcesso      TipoAcessoLivro @default(COMPRA)
+  acessoExpiraEm  DateTime?
+  statusLeitura   StatusLeitura   @default(NAO_INICIADO)
+  percentualLido  Int             @default(0)
   paginaAtual     Int?
   ultimaLeituraEm DateTime?
-  usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  edicao          EdicaoLivro   @relation(fields: [edicaoId], references: [id], onDelete: Restrict)
-  itemPedido      ItemPedido?   @relation(fields: [itemPedidoId], references: [id], onDelete: SetNull)
-  adicionadoEm    DateTime      @default(now())
-  atualizadoEm    DateTime      @updatedAt
+  usuario         Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  edicao          EdicaoLivro     @relation(fields: [edicaoId], references: [id], onDelete: Restrict)
+  itemPedido      ItemPedido?     @relation(fields: [itemPedidoId], references: [id], onDelete: SetNull)
+  adicionadoEm    DateTime        @default(now())
+  atualizadoEm    DateTime        @updatedAt
 
   @@unique([usuarioId, edicaoId])
   @@index([edicaoId])

@@ -25,6 +25,7 @@ const itemPedidoSchema = z
 export const criarPedidoSchema = z
   .object({
     vendedorId: idSchema,
+    tipo: z.enum(['COMPRA', 'ALUGUEL']).default('COMPRA'),
     itens: z.array(itemPedidoSchema).min(1).max(50),
     enderecoEntrega: enderecoEntregaSchema.optional(),
   })
@@ -39,6 +40,12 @@ export const criarPedidoSchema = z
   )
 
 export type CriarPedidoEntrada = z.infer<typeof criarPedidoSchema>
+
+export const pedidoIdParametroSchema = z
+  .object({
+    pedidoId: idSchema,
+  })
+  .strict()
 
 export function ofertasPertencemAoVendedor(
   vendedorId: string,

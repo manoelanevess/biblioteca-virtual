@@ -36,6 +36,7 @@ const selecaoLivroGerenciado = {
 const selecaoOfertaGerenciada = {
   id: true,
   preco: true,
+  precoAluguel: true,
   estoque: true,
   status: true,
   chaveArquivoDigital: true,
@@ -96,6 +97,8 @@ function mapearOfertaGerenciada(
   return {
     id: oferta.id,
     preco: Number(oferta.preco),
+    precoAluguel:
+      oferta.precoAluguel === null ? null : Number(oferta.precoAluguel),
     estoque: oferta.estoque,
     status: oferta.status,
     possuiArquivoDigital: Boolean(oferta.chaveArquivoDigital),
@@ -335,6 +338,7 @@ export async function criarOferta(
       vendedorId,
       edicaoId: entrada.edicaoId,
       preco: entrada.preco,
+      precoAluguel: entrada.precoAluguel ?? null,
       estoque:
         entrada.formato === FormatoLivro.FISICO ? entrada.estoque : null,
       chaveArquivoDigital:
